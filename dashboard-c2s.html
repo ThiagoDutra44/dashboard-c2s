@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C2S · Dashboard de Leads</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #04080f; --bg2: #070f1a; --bg3: #0a1525;
+    --border: #0e2a44; --border2: #163a5a;
+    --cyan: #00d4ff; --cyan2: #0099cc;
+    --orange: #ff7b2c; --green: #00ff9d;
+    --text: #b0c8e0; --text2: #4a7a9a; --text3: #1e3a5a;
+    --font: 'Rajdhani', sans-serif; --mono: 'Share Tech Mono', monospace;
+  }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+  body::after { content: ''; position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); pointer-events: none; z-index: 9999; }
+
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid var(--border); background: var(--bg2); position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: var(--mono); font-size: 14px; color: var(--cyan); letter-spacing: 4px; display: flex; align-items: center; gap: 10px; }
+  .logo-dot { width: 6px; height: 6px; background: var(--cyan); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .header-center { font-size: 11px; letter-spacing: 5px; color: var(--text3); text-transform: uppercase; }
+  .status-pill { font-family: var(--mono); font-size: 10px; padding: 4px 12px; border: 1px solid var(--border2); color: var(--text2); border-radius: 2px; }
+  .status-pill.live { border-color: var(--green); color: var(--green); }
+
+  .filter-bar { display: flex; align-items: center; gap: 12px; padding: 10px 24px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .filter-label { font-size: 10px; letter-spacing: 3px; color: var(--text3); text-transform: uppercase; }
+  .filter-input { font-family: var(--mono); font-size: 11px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 2px; outline: none; }
+  .filter-input:focus { border-color: var(--cyan2); }
+  .filter-btn { font-family: var(--font); font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; padding: 6px 16px; background: transparent; border: 1px solid var(--cyan2); color: var(--cyan); cursor: pointer; border-radius: 2px; transition: all 0.2s; }
+  .filter-btn:hover { background: rgba(0,212,255,0.1); }
+  .filter-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 20px; }
+  .loading-logo { font-family: var(--mono); font-size: 20px; color: var(--cyan); letter-spacing: 8px; }
+  .loading-bar-wrap { width: 300px; height: 2px; background: var(--bg3); border-radius: 1px; overflow: hidden; }
+  .loading-bar { height: 100%; background: linear-gradient(90deg, var(--cyan2), var(--cyan)); width: 0%; transition: width 0.3s; }
+  .loading-text { font-family: var(--mono); font-size: 11px; color: var(--text2); letter-spacing: 2px; }
+
+  .error-box { background: rgba(255,60,60,0.05); border: 1px solid rgba(255,60,60,0.3); padding: 12px 16px; border-radius: 2px; font-family: var(--mono); font-size: 12px; color: #ff6060; margin: 16px 24px; display: none; }
+
+  .main { padding: 16px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .kpi-card { background: var(--bg2); border: 1px solid var(--border); border-top: 2px solid var(--cyan2); padding: 16px; border-radius: 2px; }
+  .kpi-card.orange { border-top-color: var(--orange); }
+  .kpi-card.green { border-top-color: var(--green); }
+  .kpi-card.dim { border-top-color: var(--border2); }
+  .kpi-label { font-size: 10px; letter-spacing: 3px; color: var(--text3); text-transform: uppercase; margin-bottom: 8px; }
+  .kpi-value { font-family: var(--mono); font-size: 28px; color: var(--cyan); line-height: 1; margin-bottom: 4px; }
+  .kpi-card.orange .kpi-value { color: var(--orange); }
+  .kpi-card.green .kpi-value { color: var(--green); }
+  .kpi-card.dim .kpi-value { color: var(--text2); font-size: 18px; margin-top: 4px; }
+  .kpi-sub { font-size: 11px; color: var(--text2); }
+  .kpi-bar { margin-top: 10px; height: 2px; background: var(--bg3); border-radius: 1px; }
+  .kpi-bar-fill { height: 100%; background: linear-gradient(90deg, var(--cyan2), var(--cyan)); border-radius: 1px; transition: width 1s ease; }
+
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .chart-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 2px; padding: 16px; }
+  .card-title { font-size: 10px; letter-spacing: 3px; color: var(--text2); text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card-title::before { content: ''; width: 12px; height: 1px; background: var(--cyan); }
+
+  .donut-wrap { display: flex; align-items: center; gap: 16px; }
+  .donut-canvas-wrap { position: relative; flex-shrink: 0; }
+  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .donut-center-val { font-family: var(--mono); font-size: 16px; color: var(--cyan); line-height: 1; }
+  .donut-center-lbl { font-size: 9px; color: var(--text3); letter-spacing: 1px; margin-top: 2px; }
+  .donut-legend { flex: 1; }
+  .legend-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; font-size: 12px; }
+  .legend-dot { width: 5px; height: 5px; border-radius: 50%; margin-right: 7px; flex-shrink: 0; }
+  .legend-name { flex: 1; color: var(--text2); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .legend-val { font-family: var(--mono); font-size: 11px; color: var(--cyan); margin-left: 8px; }
+
+  .hbar-item { margin-bottom: 10px; }
+  .hbar-top { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+  .hbar-name { color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .hbar-val { font-family: var(--mono); font-size: 11px; color: var(--cyan); }
+  .hbar-track { height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+  .hbar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+  .bairro-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+  .bairro-item { background: var(--bg3); border: 1px solid var(--border); padding: 10px; text-align: center; border-radius: 2px; }
+  .bairro-val { font-family: var(--mono); font-size: 20px; color: var(--cyan); line-height: 1; }
+  .bairro-name { font-size: 10px; color: var(--text2); margin-top: 4px; }
+
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo"><div class="logo-dot"></div>C2S · DASHBOARD</div>
+  <div class="header-center">Inteligência de Leads</div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <div class="status-pill" id="lastUpdate">—</div>
+    <div class="status-pill live">● ONLINE</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <span class="filter-label">Período</span>
+  <input type="date" class="filter-input" id="dateFrom">
+  <span class="filter-label">até</span>
+  <input type="date" class="filter-input" id="dateTo">
+  <button class="filter-btn" id="btnLoad" onclick="loadData()">▶ Carregar Dados</button>
+</div>
+
+<div class="error-box" id="errorBox"></div>
+
+<div id="loadingScreen" class="loading-screen">
+  <div class="loading-logo">C2S · BI</div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar"></div></div>
+  <div class="loading-text" id="loadingText">Selecione o período e clique em Carregar</div>
+</div>
+
+<div class="main" id="mainContent" style="display:none;">
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Total de Leads</div>
+      <div class="kpi-value" id="kpiTotal">—</div>
+      <div class="kpi-sub" id="kpiPeriod">—</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" id="kpiBar1" style="width:0%"></div></div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Em Negociação</div>
+      <div class="kpi-value" id="kpiNeg">—</div>
+      <div class="kpi-sub" id="kpiNegPct">—</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" id="kpiBar2" style="width:0%;background:linear-gradient(90deg,#cc5500,#ff7b2c)"></div></div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Leads Novos</div>
+      <div class="kpi-value" id="kpiNovo">—</div>
+      <div class="kpi-sub" id="kpiNovoPct">—</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" id="kpiBar3" style="width:0%;background:linear-gradient(90deg,#00aa66,#00ff9d)"></div></div>
+    </div>
+    <div class="kpi-card dim">
+      <div class="kpi-label">Tipo Predominante</div>
+      <div class="kpi-value" id="kpiNegocio">—</div>
+      <div class="kpi-sub" id="kpiNegocioSub">—</div>
+    </div>
+    <div class="kpi-card dim">
+      <div class="kpi-label">Horário de Pico</div>
+      <div class="kpi-value" id="kpiPico">—</div>
+      <div class="kpi-sub">maior volume de entradas</div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="card">
+      <div class="card-title">Canal de Entrada</div>
+      <div class="donut-wrap">
+        <div class="donut-canvas-wrap">
+          <canvas id="chartCanal" width="120" height="120"></canvas>
+          <div class="donut-center"><div class="donut-center-val" id="canalTotal">—</div><div class="donut-center-lbl">leads</div></div>
+        </div>
+        <div class="donut-legend" id="legendCanal"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Fonte de Leads</div>
+      <div id="fonteList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Leads por Corretor</div>
+      <div id="corretorList"></div>
+    </div>
+  </div>
+
+  <div class="chart-grid-4">
+    <div class="card">
+      <div class="card-title">Status</div>
+      <div class="donut-wrap" style="flex-direction:column;align-items:flex-start;gap:10px;">
+        <div class="donut-canvas-wrap"><canvas id="chartStatus" width="100" height="100"></canvas><div class="donut-center"><div class="donut-center-val" id="statusTotal" style="font-size:13px;">—</div></div></div>
+        <div class="donut-legend" id="legendStatus" style="width:100%;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tipo de Negociação</div>
+      <div class="donut-wrap" style="flex-direction:column;align-items:flex-start;gap:10px;">
+        <div class="donut-canvas-wrap"><canvas id="chartNegocio" width="100" height="100"></canvas><div class="donut-center"><div class="donut-center-val" id="negocioTotal" style="font-size:13px;">—</div></div></div>
+        <div class="donut-legend" id="legendNegocio" style="width:100%;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Horário de Pico</div>
+      <div style="position:relative;height:160px;"><canvas id="chartHora"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Leads por Equipe</div>
+      <div id="equipeList"></div>
+    </div>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="card">
+      <div class="card-title">Evolução de Leads</div>
+      <div style="position:relative;height:180px;"><canvas id="chartEvolucao"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Principais Bairros</div>
+      <div class="bairro-grid" id="bairroGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN = 'bddacff4eae7f13d75ff2a77490308a79abb2070fc6f533a95';
+const API_BASE = 'https://api.contact2sale.com/integration';
+const COLORS = ['#00d4ff','#ff7b2c','#00ff9d','#ffd700','#bf7fff','#ff4f8b','#00bfff','#ff9900','#66ff66','#ff6666'];
+const STATUS_COLORS = { novo:'#00d4ff', new:'#00d4ff', em_negociacao:'#ff7b2c', under_negotiation:'#ff7b2c', convertido:'#00ff9d', negocio_fechado:'#ffd700', arquivado:'#4a7a9a', lost:'#4a7a9a', resgatado:'#bf7fff', pendente:'#ff9900', recusado:'#ff4f8b', finalizado:'#66ff66' };
+let charts = {};
+
+function setProgress(pct, text) {
+  document.getElementById('loadingBar').style.width = pct + '%';
+  document.getElementById('loadingText').textContent = text;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+async function apiFetch(path) {
+  const url = 'https://api.allorigins.win/get?url=' + encodeURIComponent(API_BASE + path);
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': 'Bearer ' + TOKEN,
+      'x-requested-with': 'XMLHttpRequest'
+    }
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json(); return JSON.parse(data.contents);
+}
+
+async function loadData() {
+  const btn = document.getElementById('btnLoad');
+  btn.disabled = true;
+  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'flex';
+
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+
+  if (!from || !to) {
+    setProgress(0, 'Selecione o período e clique em Carregar');
+    btn.disabled = false;
+    return;
+  }
+
+  setProgress(5, 'CONECTANDO À API C2S...');
+
+  try {
+    const allLeads = [];
+    let page = 1;
+    const fromStr = from + 'T00:00:00Z';
+
+    // First call to get total
+    setProgress(10, 'AUTENTICANDO...');
+    const first = await apiFetch(`/leads?page=1&perpage=50&created_gte=${fromStr}`);
+    if (!first.data || first.data.length === 0) {
+      setProgress(0, 'Selecione o período e clique em Carregar');
+      showError('Nenhum lead encontrado no período selecionado.');
+      btn.disabled = false;
+      return;
+    }
+
+    allLeads.push(...first.data);
+    const total = first.meta?.total || first.data.length;
+    const totalPages = Math.ceil(total / 50);
+    setProgress(20, `CARREGANDO... ${allLeads.length} / ${total} leads`);
+
+    for (let p = 2; p <= totalPages; p++) {
+      try {
+        await new Promise(r => setTimeout(r, 500));
+        const json = await apiFetch(`/leads?page=${p}&perpage=50&created_gte=${fromStr}`);
+        if (!json.data || json.data.length === 0) break;
+        allLeads.push(...json.data);
+        const pct = Math.min(85, Math.round((allLeads.length / total) * 75) + 10);
+        setProgress(pct, `CARREGANDO... ${allLeads.length} / ${total} leads`);
+      } catch(e) {
+        // rate limit - stop here
+        break;
+      }
+    }
+
+    setProgress(90, 'PROCESSANDO DADOS...');
+    await new Promise(r => setTimeout(r, 200));
+    render(allLeads, from, to);
+    setProgress(100, 'CONCLUÍDO');
+    await new Promise(r => setTimeout(r, 300));
+
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleString('pt-BR');
+    btn.disabled = false;
+
+  } catch(e) {
+    setProgress(0, 'Selecione o período e clique em Carregar');
+    showError('Erro ao conectar: ' + e.message);
+    btn.disabled = false;
+  }
+}
+
+function count(arr, key) {
+  return arr.reduce((acc, item) => {
+    const v = key(item) || 'Indefinido';
+    if (v && v !== 'null' && v !== 'undefined') acc[v] = (acc[v] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+function top(obj, n) {
+  return Object.entries(obj).sort((a,b) => b[1]-a[1]).slice(0, n);
+}
+
+function makeDonut(id, labels, data, colors) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: false, cutout: '72%', plugins: { legend: { display: false } } }
+  });
+}
+
+function makeLegend(id, labels, values, colors) {
+  document.getElementById(id).innerHTML = labels.map((l,i) => `
+    <div class="legend-item">
+      <span class="legend-dot" style="background:${colors[i]}"></span>
+      <span class="legend-name">${l}</span>
+      <span class="legend-val">${values[i]}</span>
+    </div>`).join('');
+}
+
+function makeHBar(id, items, maxVal) {
+  document.getElementById(id).innerHTML = items.map(([name, val], i) => `
+    <div class="hbar-item">
+      <div class="hbar-top"><span class="hbar-name">${name}</span><span class="hbar-val">${val}</span></div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${Math.round(val/maxVal*100)}%;background:${i===0?'linear-gradient(90deg,#0099cc,#00d4ff)':i===1?'linear-gradient(90deg,#0066aa,#0099cc)':'#0a2a4a'}"></div></div>
+    </div>`).join('');
+}
+
+function render(leads, from, to) {
+  const total = leads.length;
+
+  const byStatus = count(leads, l => l.attributes?.lead_status?.alias);
+  const negCount = (byStatus['em_negociacao']||0) + (byStatus['under_negotiation']||0);
+  const novoCount = (byStatus['novo']||0) + (byStatus['new']||0);
+
+  document.getElementById('kpiTotal').textContent = total.toLocaleString('pt-BR');
+  document.getElementById('kpiPeriod').textContent = new Date(from+'T12:00:00').toLocaleDateString('pt-BR') + ' → ' + new Date(to+'T12:00:00').toLocaleDateString('pt-BR');
+  document.getElementById('kpiNeg').textContent = negCount.toLocaleString('pt-BR');
+  document.getElementById('kpiNegPct').textContent = Math.round(negCount/total*100) + '% do total';
+  document.getElementById('kpiNovo').textContent = novoCount.toLocaleString('pt-BR');
+  document.getElementById('kpiNovoPct').textContent = Math.round(novoCount/total*100) + '% do total';
+
+  setTimeout(() => {
+    document.getElementById('kpiBar1').style.width = '100%';
+    document.getElementById('kpiBar2').style.width = Math.round(negCount/total*100) + '%';
+    document.getElementById('kpiBar3').style.width = Math.round(novoCount/total*100) + '%';
+  }, 300);
+
+  const byNeg = count(leads, l => l.attributes?.product?.real_estate_detail?.negotiation_name);
+  delete byNeg['Indefinido'];
+  const negTypes = top(byNeg, 2);
+  document.getElementById('kpiNegocio').textContent = negTypes[0]?.[0] || '—';
+  document.getElementById('kpiNegocioSub').textContent = negTypes[1] ? negTypes[1][0] + ' · ' + Math.round(negTypes[1][1]/total*100) + '%' : '—';
+
+  const byHour = {};
+  leads.forEach(l => { const d = l.attributes?.created_at; if(d) { const h = new Date(d).getHours(); byHour[h] = (byHour[h]||0)+1; } });
+  const peakHour = Object.entries(byHour).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('kpiPico').textContent = peakHour ? peakHour[0]+'h' : '—';
+
+  const byCanal = count(leads, l => l.attributes?.channel?.name);
+  const canalTop = top(byCanal, 6);
+  document.getElementById('canalTotal').textContent = total;
+  makeDonut('chartCanal', canalTop.map(e=>e[0]), canalTop.map(e=>e[1]), COLORS);
+  makeLegend('legendCanal', canalTop.map(e=>e[0]), canalTop.map(e=>e[1]), COLORS);
+
+  const byFonte = count(leads, l => l.attributes?.lead_source?.name);
+  const fonteTop = top(byFonte, 7);
+  makeHBar('fonteList', fonteTop, fonteTop[0]?.[1]||1);
+
+  const byCorretor = count(leads, l => l.attributes?.seller?.name);
+  const corretorTop = top(byCorretor, 6);
+  makeHBar('corretorList', corretorTop, corretorTop[0]?.[1]||1);
+
+  const statusTop = top(byStatus, 5);
+  const statusColors = statusTop.map(([k]) => STATUS_COLORS[k]||'#4a7a9a');
+  document.getElementById('statusTotal').textContent = total;
+  makeDonut('chartStatus', statusTop.map(e=>e[0]), statusTop.map(e=>e[1]), statusColors);
+  makeLegend('legendStatus', statusTop.map(e=>e[0]), statusTop.map(e=>e[1]), statusColors);
+
+  const negTop = top(byNeg, 4);
+  document.getElementById('negocioTotal').textContent = total;
+  makeDonut('chartNegocio', negTop.map(e=>e[0]), negTop.map(e=>e[1]), COLORS);
+  makeLegend('legendNegocio', negTop.map(e=>e[0]), negTop.map(e=>e[1]), COLORS);
+
+  const byEquipe = count(leads, l => l.attributes?.company?.name);
+  const equipeTop = top(byEquipe, 6);
+  makeHBar('equipeList', equipeTop, equipeTop[0]?.[1]||1);
+
+  const hoursData = Array(24).fill(0);
+  leads.forEach(l => { const d = l.attributes?.created_at; if(d) hoursData[new Date(d).getHours()]++; });
+  const maxH = Math.max(...hoursData);
+  if (charts['chartHora']) charts['chartHora'].destroy();
+  charts['chartHora'] = new Chart(document.getElementById('chartHora'), {
+    type: 'bar',
+    data: {
+      labels: Array.from({length:24},(_,i) => i%3===0?i+'h':''),
+      datasets: [{ data: hoursData, backgroundColor: hoursData.map(v => v===maxH?'#00d4ff':v>maxH*0.6?'#0099cc':'#0a2a4a'), borderRadius: 1, borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#1e3a5a', font: { size: 9 } }, grid: { display: false } }, y: { display: false } } }
+  });
+
+  const byDay = {};
+  leads.forEach(l => { const d = l.attributes?.created_at; if(d) { const k = new Date(d).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); byDay[k]=(byDay[k]||0)+1; } });
+  const dayEntries = Object.entries(byDay).slice(-45);
+  if (charts['chartEvolucao']) charts['chartEvolucao'].destroy();
+  charts['chartEvolucao'] = new Chart(document.getElementById('chartEvolucao'), {
+    type: 'line',
+    data: { labels: dayEntries.map(e=>e[0]), datasets: [{ data: dayEntries.map(e=>e[1]), borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.05)', borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.3 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#1e3a5a', font: { size: 9 }, maxTicksLimit: 10 }, grid: { display: false } }, y: { ticks: { color: '#1e3a5a', font: { size: 9 } }, grid: { color: '#0a1525' } } } }
+  });
+
+  const byBairro = count(leads, l => l.attributes?.product?.neighbourhood);
+  delete byBairro['Indefinido']; delete byBairro['null']; delete byBairro['undefined'];
+  const bairroTop = top(byBairro, 10).filter(([k]) => k && k !== 'Indefinido');
+  document.getElementById('bairroGrid').innerHTML = bairroTop.map(([name, val]) => `
+    <div class="bairro-item">
+      <div class="bairro-val">${val}</div>
+      <div class="bairro-name">${name}</div>
+    </div>`).join('');
+}
+
+const today = new Date();
+const from90 = new Date(today);
+from90.setDate(today.getDate() - 90);
+document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+document.getElementById('dateFrom').value = from90.toISOString().split('T')[0];
+</script>
+</body>
+</html>
