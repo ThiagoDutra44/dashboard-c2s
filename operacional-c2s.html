@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C2S · Operacional</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#04080f;--bg2:#070f1a;--bg3:#0a1525;--bg4:#0d1e35;
+  --border:#0e2a44;--border2:#163a5a;
+  --cyan:#00d4ff;--cyan2:#0099cc;
+  --orange:#ff7b2c;--green:#00ff9d;--red:#ff4444;--yellow:#ffd700;--purple:#bf7fff;
+  --text:#d0e8f8;--text2:#7ab0d0;--text3:#3a6a8a;
+  --font:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999;}
+
+.login-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;z-index:1000;}
+.login-logo{font-family:var(--mono);font-size:22px;color:var(--cyan);letter-spacing:8px;}
+.login-sub{font-size:11px;letter-spacing:4px;color:var(--text3);text-transform:uppercase;}
+.login-box{background:var(--bg2);border:1px solid var(--border2);padding:32px;border-radius:4px;display:flex;flex-direction:column;gap:16px;width:300px;}
+.login-input{font-family:var(--mono);font-size:13px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:3px;outline:none;width:100%;letter-spacing:2px;}
+.login-input:focus{border-color:var(--cyan2);}
+.login-btn{font-family:var(--font);font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:10px;background:transparent;border:1px solid var(--cyan2);color:var(--cyan);cursor:pointer;border-radius:3px;width:100%;}
+.login-btn:hover{background:rgba(0,212,255,0.1);}
+.login-err{font-family:var(--mono);font-size:11px;color:#ff6060;text-align:center;display:none;}
+
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:100;}
+.logo{font-family:var(--mono);font-size:13px;color:var(--cyan);letter-spacing:4px;display:flex;align-items:center;gap:10px;}
+.dot{width:6px;height:6px;background:var(--cyan);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.hdr-title{font-size:11px;letter-spacing:4px;color:var(--text3);text-transform:uppercase;}
+.pill{font-family:var(--mono);font-size:10px;padding:3px 10px;border:1px solid var(--border2);color:var(--text2);border-radius:2px;}
+.pill.live{border-color:var(--green);color:var(--green);}
+.btn{font-family:var(--font);font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;background:transparent;border:1px solid var(--cyan2);color:var(--cyan);cursor:pointer;border-radius:2px;transition:all .2s;}
+.btn:hover{background:rgba(0,212,255,0.1);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.btn.danger{border-color:#ff4444;color:#ff4444;}
+.btn.danger:hover{background:rgba(255,68,68,0.1);}
+
+.fbar{display:flex;align-items:center;gap:12px;padding:10px 24px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.flbl{font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;}
+.finput{font-family:var(--mono);font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:2px;outline:none;}
+.finput:focus{border-color:var(--cyan2);}
+.fselect{font-family:var(--font);font-size:12px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:2px;outline:none;cursor:pointer;}
+
+.counters{display:flex;gap:8px;padding:10px 24px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;}
+.counter{display:flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid var(--border);border-radius:2px;font-size:11px;}
+.counter-dot{width:7px;height:7px;border-radius:50%;}
+.counter-label{color:var(--text2);}
+.counter-val{font-family:var(--mono);font-weight:700;margin-left:2px;}
+
+.ldg{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:20px;}
+.ldg-logo{font-family:var(--mono);font-size:18px;color:var(--cyan);letter-spacing:6px;}
+.ldg-bar-wrap{width:280px;height:2px;background:var(--bg3);border-radius:1px;overflow:hidden;}
+.ldg-bar{height:100%;background:linear-gradient(90deg,var(--cyan2),var(--cyan));width:0%;transition:width .3s;}
+.ldg-txt{font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:2px;}
+
+.table-wrap{padding:0 24px 24px;overflow-x:auto;}
+.leads-table{width:100%;border-collapse:collapse;font-size:13px;}
+.leads-table th{font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;padding:10px 10px;border-bottom:2px solid var(--border);text-align:left;font-weight:500;white-space:nowrap;background:var(--bg);}
+.leads-table td{padding:8px 10px;border-bottom:1px solid var(--bg3);vertical-align:middle;}
+.leads-table tr:hover td{background:rgba(0,212,255,0.02);}
+
+.td-num{font-family:var(--mono);font-size:10px;color:var(--text3);width:36px;text-align:center;}
+.td-hora{font-family:var(--mono);font-size:11px;color:var(--text3);width:55px;}
+.td-cliente-nome{font-weight:600;color:var(--text);}
+.td-cliente-tel{font-size:11px;color:var(--text2);margin-top:2px;font-family:var(--mono);}
+.td-tipo{font-size:10px;letter-spacing:1px;color:var(--text3);margin-top:2px;}
+.td-imovel{color:var(--text2);font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.td-fonte{font-size:11px;color:var(--text2);max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.td-corretor{font-size:12px;color:var(--text2);max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.td-valor{font-family:var(--mono);font-size:11px;color:var(--cyan);width:70px;white-space:nowrap;}
+
+.status-select{font-family:var(--font);font-size:11px;font-weight:600;padding:5px 8px;border-radius:3px;border:1px solid;cursor:pointer;outline:none;min-width:170px;transition:all .2s;}
+.s-novo{background:rgba(0,212,255,0.08);border-color:rgba(0,212,255,0.25);color:var(--cyan);}
+.s-atendeu{background:rgba(0,255,157,0.08);border-color:rgba(0,255,157,0.25);color:var(--green);}
+.s-nao{background:rgba(255,68,68,0.08);border-color:rgba(255,68,68,0.25);color:var(--red);}
+.s-visita{background:rgba(255,215,0,0.08);border-color:rgba(255,215,0,0.25);color:var(--yellow);}
+.s-proposta{background:rgba(191,127,255,0.08);border-color:rgba(191,127,255,0.25);color:var(--purple);}
+.s-semint{background:rgba(74,122,154,0.08);border-color:rgba(74,122,154,0.25);color:var(--text2);}
+.s-aguard{background:rgba(255,123,44,0.08);border-color:rgba(255,123,44,0.25);color:var(--orange);}
+.s-permuta{background:rgba(255,170,0,0.08);border-color:rgba(255,170,0,0.25);color:#ffaa00;}
+.s-parceria{background:rgba(0,255,157,0.08);border-color:rgba(0,255,157,0.25);color:var(--green);}
+
+.obs-input{font-family:var(--font);font-size:12px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);padding:3px 4px;outline:none;width:160px;min-width:100px;transition:border-color .2s;}
+.obs-input:focus{border-color:var(--cyan2);}
+.obs-input::placeholder{color:var(--text3);}
+
+.prox-input{font-family:var(--mono);font-size:11px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text2);padding:3px 4px;outline:none;width:110px;transition:border-color .2s;}
+.prox-input:focus{border-color:var(--cyan2);}
+
+.save-indicator{font-family:var(--mono);font-size:10px;color:var(--green);opacity:0;transition:opacity .3s;letter-spacing:1px;}
+.save-indicator.show{opacity:1;}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;gap:12px;}
+.empty-txt{font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:2px;}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-logo">C2S · OPS</div>
+  <div class="login-sub">Painel Operacional Diário</div>
+  <div class="login-box">
+    <input type="text" class="login-input" id="loginUser" placeholder="Seu nome" onkeydown="if(event.key==='Enter') fazerLogin()" autocomplete="off">
+    <input type="password" class="login-input" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter') fazerLogin()">
+    <button class="login-btn" onclick="fazerLogin()">▶ Entrar</button>
+    <div class="login-err" id="loginErr">Usuário ou senha incorretos</div>
+  </div>
+</div>
+
+<div id="appWrap" style="display:none;">
+
+  <div class="hdr">
+    <div class="logo"><div class="dot"></div>C2S · OPERACIONAL</div>
+    <div class="hdr-title">Gestão Diária de Leads</div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <span class="save-indicator" id="saveInd">● SALVO</span>
+      <div class="pill" id="nomeUsuario" style="color:var(--cyan);border-color:var(--cyan2);">—</div>
+    <div class="pill" id="lastUpdate">—</div>
+      <div class="pill live">● ONLINE</div>
+      <button class="btn danger" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <div class="fbar">
+    <span class="flbl">Data</span>
+    <input type="date" class="finput" id="dateFilter">
+    <span class="flbl">Equipe</span>
+    <select class="fselect" id="empresaFilter" onchange="renderizarTabela()">
+      <option value="">Todas</option>
+    </select>
+    <span class="flbl">Corretor</span>
+    <select class="fselect" id="corretorFilter" onchange="renderizarTabela()">
+      <option value="">Todos</option>
+    </select>
+    <span class="flbl">Status</span>
+    <select class="fselect" id="statusFilter" onchange="renderizarTabela()">
+      <option value="">Todos</option>
+      <option value="novo">Novo</option>
+      <option value="aguagend">Aguardando Agendamento</option>
+      <option value="visita">Visita Agendada</option>
+      <option value="nao">Não Responde</option>
+      <option value="permuta">Quer Permuta</option>
+      <option value="proposta">Proposta Formalizada</option>
+      <option value="semint">Sem Interesse</option>
+      <option value="parceria">Parceria</option>
+    </select>
+    <button class="btn" id="btnLoad" onclick="carregarLeads()">▶ Carregar</button>
+    <button class="btn danger" onclick="limparDados()">✕ Limpar Registros</button>
+  </div>
+
+  <div class="counters" id="counters" style="display:none;">
+    <span class="flbl">Resumo:</span>
+    <div class="counter"><div class="counter-dot" style="background:var(--cyan)"></div><span class="counter-label">Novos</span><span class="counter-val" id="cNovo" style="color:var(--cyan)">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:var(--orange)"></div><span class="counter-label">Ag. Agendamento</span><span class="counter-val" id="cAguagend" style="color:var(--orange)">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:var(--yellow)"></div><span class="counter-label">Visita</span><span class="counter-val" id="cVisita" style="color:var(--yellow)">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:var(--red)"></div><span class="counter-label">Não Responde</span><span class="counter-val" id="cNao" style="color:var(--red)">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:#ffaa00"></div><span class="counter-label">Permuta</span><span class="counter-val" id="cPermuta" style="color:#ffaa00">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:var(--purple)"></div><span class="counter-label">Proposta</span><span class="counter-val" id="cProposta" style="color:var(--purple)">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:var(--text2)"></div><span class="counter-label">Sem Interesse</span><span class="counter-val" id="cSemInt" style="color:var(--text2)">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:var(--green)"></div><span class="counter-label">Parceria</span><span class="counter-val" id="cParceria" style="color:var(--green)">0</span></div>
+    <div class="counter" style="margin-left:auto;border-color:var(--border2);"><span class="counter-label">Total</span><span class="counter-val" id="cTotal" style="color:var(--text)">0</span></div>
+  </div>
+
+  <div class="ldg" id="ldgScreen">
+    <div class="ldg-logo">C2S · OPS</div>
+    <div class="ldg-bar-wrap"><div class="ldg-bar" id="ldgBar"></div></div>
+    <div class="ldg-txt" id="ldgTxt">Selecione a data e clique em Carregar</div>
+  </div>
+
+  <div class="table-wrap" id="tableWrap" style="display:none;">
+    <table class="leads-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Hora</th>
+          <th>Cliente</th>
+          <th>Imóvel</th>
+          <th>Bairro / Cidade</th>
+          <th>Fonte</th>
+          <th>Corretor</th>
+          <th>Valor</th>
+          <th>Status Atendimento</th>
+          <th>Observação</th>
+          <th>Próx. Contato</th>
+        </tr>
+      </thead>
+      <tbody id="leadsBody"></tbody>
+    </table>
+    <div class="empty" id="emptyState" style="display:none;">
+      <div class="empty-txt">Nenhum lead encontrado para os filtros selecionados</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var PROXY = 'https://c2s-proxy.onrender.com/api';
+var FIREBASE = 'https://c2s-operacional-default-rtdb.firebaseio.com';
+var USUARIOS = {
+  'Thiago':         {senha:'Th@2026#BI', perfil:'gestor',  filtro:null},
+  'Daiana Alves':   {senha:'Da@7843#Kx', perfil:'gestor',  filtro:{tipo:'empresa', valor:'ImovelUm Imobiliária'}},
+  'Felipe Lazzeri': {senha:'Fe@3291#Lz', perfil:'gestor',  filtro:{tipo:'empresa', valor:'Equipe Copacabana'}},
+  'Rafael Jóia':    {senha:'Ra@6514#Rj', perfil:'gestor',  filtro:{tipo:'empresa', valor:'Equipe Copacabana'}},
+  'Cristiane Melo': {senha:'Cr@9072#Cm', perfil:'corretor',filtro:{tipo:'corretor', valor:'Cristiane Melo'}}
+};
+var usuarioAtual = null;
+var todosLeads = [];
+var registros = {};
+var saveTimer = null;
+
+var SMAP = {
+  'novo':     {label:'🔵 Novo',                    cls:'s-novo'},
+  'aguagend': {label:'⏳ Aguardando Agendamento',   cls:'s-aguard'},
+  'visita':   {label:'📅 Visita Agendada',          cls:'s-visita'},
+  'nao':      {label:'📵 Não Responde',             cls:'s-nao'},
+  'permuta':  {label:'⇄ Quer Permuta',             cls:'s-permuta'},
+  'proposta': {label:'📋 Proposta Formalizada',     cls:'s-proposta'},
+  'semint':   {label:'— Sem Interesse',            cls:'s-semint'},
+  'parceria': {label:'🤝 Parceria',                cls:'s-parceria'}
+};
+
+function fazerLogin() {
+  var user = document.getElementById('loginUser').value.trim();
+  var pass = document.getElementById('loginPass').value;
+  var u = USUARIOS[user];
+  if (u && u.senha === pass) {
+    usuarioAtual = user;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appWrap').style.display = 'block';
+    document.getElementById('nomeUsuario').textContent = user;
+    aplicarFiltroUsuario();
+    carregarSalvos();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+    document.getElementById('loginPass').value = '';
+  }
+}
+
+function aplicarFiltroUsuario() {
+  var u = USUARIOS[usuarioAtual];
+  if (!u || !u.filtro) return;
+  var sel = document.getElementById('corretorFilter');
+  var empSel = document.getElementById('empresaFilter');
+  if (u.filtro.tipo === 'corretor') {
+    sel.value = u.filtro.valor;
+    sel.disabled = true;
+  } else if (u.filtro.tipo === 'empresa') {
+    if (empSel) { empSel.value = u.filtro.valor; empSel.disabled = true; }
+  }
+}
+
+function sair() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appWrap').style.display = 'none';
+  document.getElementById('loginPass').value = '';
+}
+
+function carregarSalvos() {
+  fetch(FIREBASE + '/registros.json')
+    .then(function(r){ return r.ok ? r.json() : {}; })
+    .then(function(data){ registros = data || {}; })
+    .catch(function(){ registros = {}; });
+}
+
+function salvar() {
+  fetch(FIREBASE + '/registros.json', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(registros)
+  }).catch(function(){});
+  var el = document.getElementById('saveInd');
+  el.classList.add('show');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){ el.classList.remove('show'); }, 2000);
+}
+
+function sincronizar() {
+  fetch(FIREBASE + '/registros.json')
+    .then(function(r){ return r.ok ? r.json() : {}; })
+    .then(function(data){
+      if (data) {
+        registros = data;
+        renderizarTabela();
+      }
+    })
+    .catch(function(){});
+}
+
+function limparDados() {
+  if (confirm('Apagar todos os registros de status, observações e próximos contatos? Não pode ser desfeito.')) {
+    registros = {};
+    salvar();
+    renderizarTabela();
+  }
+}
+
+function getReg(id) {
+  if (!registros[id]) registros[id] = {status:'novo',obs:'',prox:'',hora:''};
+  return registros[id];
+}
+
+function setStatus(id, val) {
+  getReg(id).status = val;
+  salvar();
+  var sel = document.getElementById('sel_'+id);
+  if (sel) { sel.className = 'status-select '+SMAP[val].cls; }
+  var visitaCell = document.getElementById('visita_'+id);
+  if (visitaCell) visitaCell.style.display = val === 'visita' ? 'flex' : 'none';
+  atualizarContadores();
+}
+
+function setHora(id, val) { getReg(id).hora = val; salvar(); atualizarBotaoGoogle(id); }
+
+function atualizarBotaoGoogle(id) {
+  var r = getReg(id);
+  var lead = todosLeads.find(function(l){ return l.id === id; });
+  if (!lead) return;
+  var a = lead.attributes||{};
+  var nome = a.customer?a.customer.name:'Cliente';
+  var imovel = a.product?(a.product.description||''):'';
+  var bairro = document.getElementById('bairro_'+id)?document.getElementById('bairro_'+id).textContent:'';
+  var cidade = document.getElementById('cidade_'+id)?document.getElementById('cidade_'+id).textContent:'';
+  var tel = a.customer?(a.customer.phone||''):'';
+  var data = r.prox||new Date().toISOString().split('T')[0];
+  var hora = r.hora||'09:00';
+  var dt = data.replace(/-/g,'') + 'T' + hora.replace(':','') + '00';
+  var dtEnd = data.replace(/-/g,'') + 'T' + (function(){
+    var h = parseInt(hora.split(':')[0])+1;
+    return (h<10?'0'+h:h) + hora.split(':')[1] + '00';
+  }());
+  var titulo = encodeURIComponent('Visita — ' + nome);
+  var local = encodeURIComponent(bairro + (cidade && cidade!=='—'?', '+cidade:''));
+  var desc = encodeURIComponent('Tel: '+tel+'\nImóvel: '+imovel);
+  var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+titulo+'&dates='+dt+'/'+dtEnd+'&location='+local+'&details='+desc;
+  var btn = document.getElementById('gcal_'+id);
+  if (btn) btn.href = url;
+}
+
+function setObs(id, val) { getReg(id).obs = val; salvar(); }
+function setProx(id, val) { getReg(id).prox = val; salvar(); atualizarBotaoGoogle(id); }
+
+function fmtValor(v) {
+  if (!v||v<=0) return '—';
+  if (v>=1000000) return 'R$'+(v/1000000).toFixed(1)+'M';
+  if (v>=1000) return 'R$'+(v/1000).toFixed(0)+'k';
+  return 'R$'+v;
+}
+
+function fmtHora(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function leadsFiltrados() {
+  var cf = document.getElementById('corretorFilter').value;
+  var sf = document.getElementById('statusFilter').value;
+  var ef = document.getElementById('empresaFilter').value;
+  var u = usuarioAtual ? USUARIOS[usuarioAtual] : null;
+
+  return todosLeads.filter(function(l) {
+    var a = l.attributes||{};
+    var empresa = a.company?a.company.name:'';
+    var corretor = a.seller?a.seller.name:'';
+
+    // Aplicar restrição do usuário logado
+    if (u && u.filtro) {
+      if (u.filtro.tipo === 'corretor' && corretor !== u.filtro.valor) return false;
+      if (u.filtro.tipo === 'empresa' && empresa !== u.filtro.valor) return false;
+    }
+
+    if (ef && empresa !== ef) return false;
+    if (cf && corretor !== cf) return false;
+    if (sf && getReg(l.id).status !== sf) return false;
+    return true;
+  });
+}
+
+function atualizarContadores() {
+  var leads = leadsFiltrados();
+  var c = {novo:0,aguagend:0,visita:0,nao:0,permuta:0,proposta:0,semint:0,parceria:0};
+  leads.forEach(function(l){ var s=getReg(l.id).status; c[s]=(c[s]||0)+1; });
+  document.getElementById('cNovo').textContent = c.novo||0;
+  document.getElementById('cAguagend').textContent = c.aguagend||0;
+  document.getElementById('cVisita').textContent = c.visita||0;
+  document.getElementById('cNao').textContent = c.nao||0;
+  document.getElementById('cPermuta').textContent = c.permuta||0;
+  document.getElementById('cProposta').textContent = c.proposta||0;
+  document.getElementById('cSemInt').textContent = c.semint||0;
+  document.getElementById('cParceria').textContent = c.parceria||0;
+  document.getElementById('cTotal').textContent = leads.length;
+}
+
+function renderizarTabela() {
+  var leads = leadsFiltrados();
+  var tbody = document.getElementById('leadsBody');
+  var empty = document.getElementById('emptyState');
+
+  if (leads.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'flex';
+    atualizarContadores();
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = leads.map(function(l, i) {
+    var a = l.attributes||{};
+    var r = getReg(l.id);
+    var nome = a.customer?a.customer.name:'—';
+    var tel = a.customer?(a.customer.phone||a.customer.phone2||''):'';
+    var tipo = a.product&&a.product.real_estate_detail?a.product.real_estate_detail.negotiation_name:'';
+    var imovel = a.product?(a.product.description||'—'):'—';
+    var bairro = a.product?(a.product.neighbourhood||''):'';
+    var cidade = a.product?(a.product.city||''):'';
+    if (bairro==='Nenhum') bairro='';
+    if ((!bairro || !cidade) && a.product && a.product.description) {
+      var emIdx = a.product.description.lastIndexOf(' em ');
+      if (emIdx !== -1) {
+        var partes = a.product.description.substring(emIdx + 4).split(',');
+        if (!bairro && partes[0]) bairro = partes[0].trim();
+        if (!cidade && partes[1]) cidade = partes[1].trim().replace(/[^a-zA-ZÀ-ÿ\s]/g,'').trim();
+      }
+    }
+    if (!bairro) bairro = '—';
+    if (!cidade) cidade = '—';
+    var fonte = a.lead_source?a.lead_source.name:'—';
+    var corretor = a.seller?a.seller.name:'—';
+    var valor = a.product?fmtValor(a.product.price_float):'—';
+    var hora = fmtHora(a.created_at);
+    var sm = SMAP[r.status]||SMAP['novo'];
+    var opts = Object.keys(SMAP).map(function(k){
+      return '<option value="'+k+'"'+(r.status===k?' selected':'')+'>'+SMAP[k].label+'</option>';
+    }).join('');
+
+    return '<tr>'+
+      '<td class="td-num">'+(i+1)+'</td>'+
+      '<td class="td-hora">'+hora+'</td>'+
+      '<td><div class="td-cliente-nome">'+esc(nome)+'</div>'+
+           '<div class="td-cliente-tel">'+esc(tel)+'</div>'+
+           (tipo?'<div class="td-tipo">'+esc(tipo)+'</div>':'')+'</td>'+
+      '<td class="td-imovel" title="'+esc(imovel)+'">'+esc(imovel)+'</td>'+
+      '<td class="td-fonte"><span id="bairro_'+l.id+'">'+esc(bairro)+'</span><br><span id="cidade_'+l.id+'" style="font-size:10px;color:var(--text3)">'+esc(cidade)+'</span></td>'+
+      '<td class="td-fonte">'+esc(fonte)+'</td>'+
+      '<td class="td-corretor">'+esc(corretor)+'</td>'+
+      '<td class="td-valor">'+valor+'</td>'+
+      '<td><select id="sel_'+l.id+'" class="status-select '+sm.cls+'" onchange="setStatus(\''+l.id+'\',this.value)">'+opts+'</select></td>'+
+      '<td><input class="obs-input" placeholder="Observação..." value="'+esc(r.obs)+'" onchange="setObs(\''+l.id+'\',this.value)" onblur="setObs(\''+l.id+'\',this.value)"></td>'+
+      '<td>'+
+        '<input class="prox-input" type="date" value="'+esc(r.prox)+'" onchange="setProx(\''+l.id+'\',this.value)">'+
+        '<div id="visita_'+l.id+'" style="display:'+(r.status==="visita"?"flex":"none")+';align-items:center;gap:6px;margin-top:4px;">'+
+          '<input class="prox-input" type="time" value="'+esc(r.hora||'09:00')+'" style="width:70px" onchange="setHora(\''+l.id+'\',this.value)">'+
+          '<a id="gcal_'+l.id+'" href="#" target="_blank" style="font-size:10px;color:var(--green);border:1px solid rgba(0,255,157,0.3);padding:2px 8px;border-radius:2px;text-decoration:none;white-space:nowrap" onclick="atualizarBotaoGoogle(\''+l.id+'\');">📅 Google</a>'+
+        '</div>'+
+      '</td>'+
+    '</tr>';
+  }).join('');
+
+  atualizarContadores();
+}
+
+function carregarLeads() {
+  var btn = document.getElementById('btnLoad');
+  btn.disabled = true;
+  document.getElementById('tableWrap').style.display = 'none';
+  document.getElementById('counters').style.display = 'none';
+  document.getElementById('ldgScreen').style.display = 'flex';
+
+  var data = document.getElementById('dateFilter').value;
+  if (!data) { document.getElementById('ldgTxt').textContent='Selecione a data'; btn.disabled=false; return; }
+
+  var from = data+'T00:00:00Z';
+  var to = data+'T23:59:59Z';
+  todosLeads = [];
+
+  document.getElementById('ldgBar').style.width = '5%';
+  document.getElementById('ldgTxt').textContent = 'CONECTANDO...';
+
+  function pagina(p) {
+    return fetch(PROXY+'/leads?page='+p+'&perpage=50&created_gte='+from+'&created_lt='+to)
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(j) {
+        if (!j.data||!j.data.length) return;
+        todosLeads = todosLeads.concat(j.data);
+        var tot = j.meta&&j.meta.total?j.meta.total:todosLeads.length;
+        document.getElementById('ldgBar').style.width = Math.min(90,Math.round(todosLeads.length/Math.max(tot,1)*80)+10)+'%';
+        document.getElementById('ldgTxt').textContent = 'CARREGANDO... '+todosLeads.length+' / '+tot;
+        if (todosLeads.length>=tot||j.data.length<50) return;
+        return new Promise(function(res){ setTimeout(function(){ res(pagina(p+1)); },2000); });
+      });
+  }
+
+  pagina(1).then(function() {
+    todosLeads.sort(function(a,b){
+      var da=a.attributes&&a.attributes.created_at?new Date(a.attributes.created_at):0;
+      var db=b.attributes&&b.attributes.created_at?new Date(b.attributes.created_at):0;
+      return da-db;
+    });
+
+    var corrs = {};
+    var emps = {};
+    todosLeads.forEach(function(l){
+      var n=l.attributes&&l.attributes.seller?l.attributes.seller.name:'';
+      var e=l.attributes&&l.attributes.company?l.attributes.company.name:'';
+      if(n) corrs[n]=1;
+      if(e) emps[e]=1;
+    });
+    var sel = document.getElementById('corretorFilter');
+    sel.innerHTML = '<option value="">Todos</option>';
+    Object.keys(corrs).sort().forEach(function(n){ sel.innerHTML+='<option value="'+n+'">'+n+'</option>'; });
+    var empSel = document.getElementById('empresaFilter');
+    empSel.innerHTML = '<option value="">Todas</option>';
+    Object.keys(emps).sort().forEach(function(e){ empSel.innerHTML+='<option value="'+e+'">'+e+'</option>'; });
+    aplicarFiltroUsuario();
+
+    document.getElementById('ldgBar').style.width = '100%';
+    document.getElementById('ldgTxt').textContent = 'CONCLUÍDO';
+
+    setTimeout(function(){
+      document.getElementById('ldgScreen').style.display = 'none';
+      document.getElementById('tableWrap').style.display = 'block';
+      document.getElementById('counters').style.display = 'flex';
+      document.getElementById('lastUpdate').textContent = new Date().toLocaleString('pt-BR');
+      btn.disabled = false;
+      renderizarTabela();
+    },300);
+
+  }).catch(function(e){
+    document.getElementById('ldgTxt').textContent = 'Erro: '+e.message;
+    btn.disabled=false;
+  });
+}
+
+document.getElementById('dateFilter').value = new Date().toISOString().split('T')[0];
+
+// Sincronizar com Firebase a cada 30 segundos
+setInterval(function(){
+  if (todosLeads.length > 0) sincronizar();
+}, 30000);
+</script>
+</body>
+</html>
