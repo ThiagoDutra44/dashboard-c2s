@@ -85,6 +85,9 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .s-aguard{background:rgba(255,123,44,0.08);border-color:rgba(255,123,44,0.25);color:var(--orange);}
 .s-permuta{background:rgba(255,170,0,0.08);border-color:rgba(255,170,0,0.25);color:#ffaa00;}
 .s-parceria{background:rgba(0,255,157,0.08);border-color:rgba(0,255,157,0.25);color:var(--green);}
+.s-conversando{background:rgba(0,180,255,0.08);border-color:rgba(0,180,255,0.25);color:#00b4ff;}
+.s-parou{background:rgba(120,120,120,0.08);border-color:rgba(120,120,120,0.25);color:#888888;}
+.s-finalizado{background:rgba(0,255,157,0.12);border-color:rgba(0,255,157,0.4);color:var(--green);font-weight:700;}
 
 .obs-input{font-family:var(--font);font-size:12px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);padding:3px 4px;outline:none;width:160px;min-width:100px;transition:border-color .2s;}
 .obs-input:focus{border-color:var(--cyan2);}
@@ -112,6 +115,10 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   <div class="login-box">
     <input type="text" class="login-input" id="loginUser" placeholder="Seu nome" onkeydown="if(event.key==='Enter') fazerLogin()" autocomplete="off">
     <input type="password" class="login-input" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter') fazerLogin()">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="lembrar" style="cursor:pointer;">
+      <label for="lembrar" style="font-size:12px;color:var(--text2);cursor:pointer;">Lembrar acesso</label>
+    </div>
     <button class="login-btn" onclick="fazerLogin()">▶ Entrar</button>
     <div class="login-err" id="loginErr">Usuário ou senha incorretos</div>
   </div>
@@ -147,12 +154,16 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <option value="">Todos</option>
       <option value="novo">Novo</option>
       <option value="aguagend">Aguardando Agendamento</option>
+      <option value="conversando">Conversando</option>
+      <option value="parou">Parou de Responder</option>
       <option value="visita">Visita Agendada</option>
+      <option value="revisita">Revisita Agendada</option>
       <option value="nao">Não Responde</option>
       <option value="permuta">Quer Permuta</option>
       <option value="proposta">Proposta Formalizada</option>
       <option value="semint">Sem Interesse</option>
       <option value="parceria">Parceria</option>
+      <option value="finalizado">Finalizado</option>
     </select>
     <button class="btn" id="btnLoad" onclick="carregarLeads()">▶ Carregar</button>
     <button class="btn danger" onclick="limparDados()">✕ Limpar Registros</button>
@@ -162,12 +173,16 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
     <span class="flbl">Resumo:</span>
     <div class="counter"><div class="counter-dot" style="background:var(--cyan)"></div><span class="counter-label">Novos</span><span class="counter-val" id="cNovo" style="color:var(--cyan)">0</span></div>
     <div class="counter"><div class="counter-dot" style="background:var(--orange)"></div><span class="counter-label">Ag. Agendamento</span><span class="counter-val" id="cAguagend" style="color:var(--orange)">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:#00b4ff"></div><span class="counter-label">Conversando</span><span class="counter-val" id="cConversando" style="color:#00b4ff">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:#888888"></div><span class="counter-label">Parou</span><span class="counter-val" id="cParou" style="color:#888888">0</span></div>
     <div class="counter"><div class="counter-dot" style="background:var(--yellow)"></div><span class="counter-label">Visita</span><span class="counter-val" id="cVisita" style="color:var(--yellow)">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:#00aaff"></div><span class="counter-label">Revisita</span><span class="counter-val" id="cRevisita" style="color:#00aaff">0</span></div>
     <div class="counter"><div class="counter-dot" style="background:var(--red)"></div><span class="counter-label">Não Responde</span><span class="counter-val" id="cNao" style="color:var(--red)">0</span></div>
     <div class="counter"><div class="counter-dot" style="background:#ffaa00"></div><span class="counter-label">Permuta</span><span class="counter-val" id="cPermuta" style="color:#ffaa00">0</span></div>
     <div class="counter"><div class="counter-dot" style="background:var(--purple)"></div><span class="counter-label">Proposta</span><span class="counter-val" id="cProposta" style="color:var(--purple)">0</span></div>
     <div class="counter"><div class="counter-dot" style="background:var(--text2)"></div><span class="counter-label">Sem Interesse</span><span class="counter-val" id="cSemInt" style="color:var(--text2)">0</span></div>
     <div class="counter"><div class="counter-dot" style="background:var(--green)"></div><span class="counter-label">Parceria</span><span class="counter-val" id="cParceria" style="color:var(--green)">0</span></div>
+    <div class="counter"><div class="counter-dot" style="background:var(--green);border:2px solid var(--green)"></div><span class="counter-label">Finalizado</span><span class="counter-val" id="cFinalizado" style="color:var(--green);font-weight:700">0</span></div>
     <div class="counter" style="margin-left:auto;border-color:var(--border2);"><span class="counter-label">Total</span><span class="counter-val" id="cTotal" style="color:var(--text)">0</span></div>
   </div>
 
@@ -191,7 +206,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
           <th>Valor</th>
           <th>Status Atendimento</th>
           <th>Observação</th>
-          <th>Próx. Contato</th>
+          <th>Visita Agendada</th>
         </tr>
       </thead>
       <tbody id="leadsBody"></tbody>
@@ -207,7 +222,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 var PROXY = 'https://c2s-proxy.onrender.com/api';
 var FIREBASE = 'https://c2s-operacional-default-rtdb.firebaseio.com';
 var USUARIOS = {
-  'Thiago':         {senha:'Th@2026#BI', perfil:'gestor',  filtro:null},
+  'Thiago':         {senha:'Th@998', perfil:'gestor',  filtro:null},
   'Daiana Alves':   {senha:'Da@7843#Kx', perfil:'gestor',  filtro:{tipo:'empresa', valor:'ImovelUm Imobiliária'}},
   'Felipe Lazzeri': {senha:'Fe@3291#Lz', perfil:'gestor',  filtro:{tipo:'empresa', valor:'Equipe Copacabana'}},
   'Rafael Jóia':    {senha:'Ra@6514#Rj', perfil:'gestor',  filtro:{tipo:'empresa', valor:'Equipe Copacabana'}},
@@ -219,30 +234,55 @@ var registros = {};
 var saveTimer = null;
 
 var SMAP = {
-  'novo':     {label:'🔵 Novo',                    cls:'s-novo'},
-  'aguagend': {label:'⏳ Aguardando Agendamento',   cls:'s-aguard'},
-  'visita':   {label:'📅 Visita Agendada',          cls:'s-visita'},
-  'nao':      {label:'📵 Não Responde',             cls:'s-nao'},
-  'permuta':  {label:'⇄ Quer Permuta',             cls:'s-permuta'},
-  'proposta': {label:'📋 Proposta Formalizada',     cls:'s-proposta'},
-  'semint':   {label:'— Sem Interesse',            cls:'s-semint'},
-  'parceria': {label:'🤝 Parceria',                cls:'s-parceria'}
+  'novo':        {label:'🔵 Novo',                    cls:'s-novo'},
+  'aguagend':    {label:'⏳ Aguardando Agendamento',   cls:'s-aguard'},
+  'conversando': {label:'💬 Conversando',              cls:'s-conversando'},
+  'visita':      {label:'📅 Visita Agendada',          cls:'s-visita'},
+  'revisita':    {label:'🔄 Revisita Agendada',        cls:'s-visita'},
+  'nao':         {label:'📵 Não Responde',             cls:'s-nao'},
+  'parou':       {label:'🔇 Parou de Responder',       cls:'s-parou'},
+  'permuta':     {label:'⇄ Quer Permuta',             cls:'s-permuta'},
+  'proposta':    {label:'📋 Proposta Formalizada',     cls:'s-proposta'},
+  'semint':      {label:'— Sem Interesse',            cls:'s-semint'},
+  'parceria':    {label:'🤝 Parceria',                cls:'s-parceria'},
+  'finalizado':  {label:'✅ Finalizado',               cls:'s-finalizado'}
 };
 
 function fazerLogin() {
   var user = document.getElementById('loginUser').value.trim();
   var pass = document.getElementById('loginPass').value;
+  var lembrar = document.getElementById('lembrar').checked;
   var u = USUARIOS[user];
   if (u && u.senha === pass) {
     usuarioAtual = user;
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appWrap').style.display = 'block';
-    document.getElementById('nomeUsuario').textContent = user;
-    aplicarFiltroUsuario();
-    carregarSalvos();
+    if (lembrar) {
+      localStorage.setItem('c2s_user', user);
+      localStorage.setItem('c2s_pass', pass);
+    } else {
+      localStorage.removeItem('c2s_user');
+      localStorage.removeItem('c2s_pass');
+    }
+    entrarNoApp(user);
   } else {
     document.getElementById('loginErr').style.display = 'block';
     document.getElementById('loginPass').value = '';
+  }
+}
+
+function entrarNoApp(user) {
+  usuarioAtual = user;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appWrap').style.display = 'block';
+  document.getElementById('nomeUsuario').textContent = user;
+  aplicarFiltroUsuario();
+  carregarSalvos();
+}
+
+function verificarLoginSalvo() {
+  var user = localStorage.getItem('c2s_user');
+  var pass = localStorage.getItem('c2s_pass');
+  if (user && pass && USUARIOS[user] && USUARIOS[user].senha === pass) {
+    entrarNoApp(user);
   }
 }
 
@@ -305,23 +345,63 @@ function limparDados() {
 }
 
 function getReg(id) {
-  if (!registros[id]) registros[id] = {status:'novo',obs:'',prox:'',hora:''};
+  if (!registros[id]) registros[id] = {status:'novo',obs:'',hora:'',dataVisita:'',bairroM:'',cidadeM:'',valorM:'',historico:[]};
   return registros[id];
 }
 
 function setStatus(id, val) {
-  getReg(id).status = val;
+  var reg = getReg(id);
+  var statusAnterior = reg.status;
+  if (statusAnterior !== val) {
+    if (!reg.historico) reg.historico = [];
+    reg.historico.push({
+      de: statusAnterior,
+      para: val,
+      por: usuarioAtual||'—',
+      em: new Date().toLocaleString('pt-BR')
+    });
+  }
+  reg.status = val;
   salvar();
   var sel = document.getElementById('sel_'+id);
   if (sel) { sel.className = 'status-select '+SMAP[val].cls; }
   var visitaCell = document.getElementById('visita_'+id);
-  if (visitaCell) visitaCell.style.display = val === 'visita' ? 'flex' : 'none';
+  if (visitaCell) visitaCell.style.display = (val === 'visita' || val === 'revisita') ? 'flex' : 'none';
   atualizarContadores();
+  atualizarBotaoHistorico(id);
 }
 
-function setHora(id, val) { getReg(id).hora = val; salvar(); atualizarBotaoGoogle(id); }
+function atualizarBotaoHistorico(id) {
+  var reg = getReg(id);
+  var btn = document.getElementById('hist_'+id);
+  if (btn && reg.historico && reg.historico.length > 0) {
+    btn.style.display = 'inline-block';
+    btn.title = reg.historico.map(function(h){
+      return h.em+' · '+h.por+': '+h.de+' → '+h.para;
+    }).join('\n');
+  }
+}
 
-function atualizarBotaoGoogle(id) {
+function verHistorico(id) {
+  var reg = getReg(id);
+  if (!reg.historico || reg.historico.length === 0) return;
+  var txt = reg.historico.map(function(h,i){
+    return (i+1)+'. '+h.em+'\n   '+h.por+': '+h.de+' → '+h.para;
+  }).join('\n\n');
+  alert('Histórico de Status:\n\n' + txt);
+}
+
+function setHora(id, val) { getReg(id).hora = val; salvar(); atualizarBotaoOutlook(id); }
+function setBairroM(id, val) { getReg(id).bairroM = val; salvar(); }
+function setCidadeM(id, val) { getReg(id).cidadeM = val; salvar(); }
+function setValorM(id, val) { getReg(id).valorM = val; salvar(); }
+function contarObs(id) {
+  var el = document.getElementById('obs_'+id);
+  var cnt = document.getElementById('obscnt_'+id);
+  if (el && cnt) cnt.textContent = el.value.length + '/500';
+}
+
+function atualizarBotaoOutlook(id) {
   var r = getReg(id);
   var lead = todosLeads.find(function(l){ return l.id === id; });
   if (!lead) return;
@@ -331,7 +411,7 @@ function atualizarBotaoGoogle(id) {
   var bairro = document.getElementById('bairro_'+id)?document.getElementById('bairro_'+id).textContent:'';
   var cidade = document.getElementById('cidade_'+id)?document.getElementById('cidade_'+id).textContent:'';
   var tel = a.customer?(a.customer.phone||''):'';
-  var data = r.prox||new Date().toISOString().split('T')[0];
+  var data = r.dataVisita||new Date().toISOString().split('T')[0];
   var hora = r.hora||'09:00';
   var dt = data.replace(/-/g,'') + 'T' + hora.replace(':','') + '00';
   var dtEnd = data.replace(/-/g,'') + 'T' + (function(){
@@ -341,13 +421,13 @@ function atualizarBotaoGoogle(id) {
   var titulo = encodeURIComponent('Visita — ' + nome);
   var local = encodeURIComponent(bairro + (cidade && cidade!=='—'?', '+cidade:''));
   var desc = encodeURIComponent('Tel: '+tel+'\nImóvel: '+imovel);
-  var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+titulo+'&dates='+dt+'/'+dtEnd+'&location='+local+'&details='+desc;
+  var url = 'https://outlook.office.com/calendar/action/compose?subject='+titulo+'&startdt='+data+'T'+hora+':00&enddt='+data+'T'+(function(){var h=parseInt(hora.split(':')[0])+1;return(h<10?'0'+h:h)+':'+hora.split(':')[1];}())+':00&location='+local+'&body='+desc+'&path=%2Fcalendar%2Faction%2Fcompose&rru=addevent';
   var btn = document.getElementById('gcal_'+id);
-  if (btn) btn.href = url;
+  if (btn) { btn.href = url; btn.textContent = '📅 Outlook'; }
 }
 
 function setObs(id, val) { getReg(id).obs = val; salvar(); }
-function setProx(id, val) { getReg(id).prox = val; salvar(); atualizarBotaoGoogle(id); }
+function setDataVisita(id, val) { getReg(id).dataVisita = val; salvar(); atualizarBotaoOutlook(id); }
 
 function fmtValor(v) {
   if (!v||v<=0) return '—';
@@ -389,16 +469,20 @@ function leadsFiltrados() {
 
 function atualizarContadores() {
   var leads = leadsFiltrados();
-  var c = {novo:0,aguagend:0,visita:0,nao:0,permuta:0,proposta:0,semint:0,parceria:0};
+  var c = {novo:0,aguagend:0,conversando:0,parou:0,visita:0,revisita:0,nao:0,permuta:0,proposta:0,semint:0,parceria:0,finalizado:0};
   leads.forEach(function(l){ var s=getReg(l.id).status; c[s]=(c[s]||0)+1; });
   document.getElementById('cNovo').textContent = c.novo||0;
   document.getElementById('cAguagend').textContent = c.aguagend||0;
+  document.getElementById('cConversando').textContent = c.conversando||0;
+  document.getElementById('cParou').textContent = c.parou||0;
   document.getElementById('cVisita').textContent = c.visita||0;
+  document.getElementById('cRevisita').textContent = c.revisita||0;
   document.getElementById('cNao').textContent = c.nao||0;
   document.getElementById('cPermuta').textContent = c.permuta||0;
   document.getElementById('cProposta').textContent = c.proposta||0;
   document.getElementById('cSemInt').textContent = c.semint||0;
   document.getElementById('cParceria').textContent = c.parceria||0;
+  document.getElementById('cFinalizado').textContent = c.finalizado||0;
   document.getElementById('cTotal').textContent = leads.length;
 }
 
@@ -437,7 +521,9 @@ function renderizarTabela() {
     if (!cidade) cidade = '—';
     var fonte = a.lead_source?a.lead_source.name:'—';
     var corretor = a.seller?a.seller.name:'—';
-    var valor = a.product?fmtValor(a.product.price_float):'—';
+    var valorRaw = a.product?a.product.price_float:0;
+    var valor = fmtValor(valorRaw);
+    var valorEditavel = (!valorRaw || valorRaw <= 0);
     var hora = fmtHora(a.created_at);
     var sm = SMAP[r.status]||SMAP['novo'];
     var opts = Object.keys(SMAP).map(function(k){
@@ -451,18 +537,39 @@ function renderizarTabela() {
            '<div class="td-cliente-tel">'+esc(tel)+'</div>'+
            (tipo?'<div class="td-tipo">'+esc(tipo)+'</div>':'')+'</td>'+
       '<td class="td-imovel" title="'+esc(imovel)+'">'+esc(imovel)+'</td>'+
-      '<td class="td-fonte"><span id="bairro_'+l.id+'">'+esc(bairro)+'</span><br><span id="cidade_'+l.id+'" style="font-size:10px;color:var(--text3)">'+esc(cidade)+'</span></td>'+
+      '<td class="td-fonte">'+
+        (bairro !== '—'
+          ? '<span id="bairro_'+l.id+'">'+esc(bairro)+'</span>'
+          : '<input class="obs-input" style="width:100px" placeholder="Bairro..." value="'+esc(r.bairroM||'')+'" id="bairro_'+l.id+'" onchange="setBairroM(\''+l.id+'\',this.value)" onblur="setBairroM(\''+l.id+'\',this.value)">')+
+        '<br>'+
+        (cidade !== '—'
+          ? '<span id="cidade_'+l.id+'" style="font-size:10px;color:var(--text3)">'+esc(cidade)+'</span>'
+          : '<input class="obs-input" style="width:90px;font-size:10px" placeholder="Cidade..." value="'+esc(r.cidadeM||'')+'" id="cidade_'+l.id+'" onchange="setCidadeM(\''+l.id+'\',this.value)" onblur="setCidadeM(\''+l.id+'\',this.value)">')+
+      '</td>'+
       '<td class="td-fonte">'+esc(fonte)+'</td>'+
       '<td class="td-corretor">'+esc(corretor)+'</td>'+
-      '<td class="td-valor">'+valor+'</td>'+
-      '<td><select id="sel_'+l.id+'" class="status-select '+sm.cls+'" onchange="setStatus(\''+l.id+'\',this.value)">'+opts+'</select></td>'+
-      '<td><input class="obs-input" placeholder="Observação..." value="'+esc(r.obs)+'" onchange="setObs(\''+l.id+'\',this.value)" onblur="setObs(\''+l.id+'\',this.value)"></td>'+
+      '<td class="td-valor">'+
+        (valorEditavel
+          ? '<input class="obs-input" style="width:80px;font-family:var(--mono);font-size:11px" placeholder="R$..." value="'+esc(r.valorM||'')+'" onchange="setValorM(\''+l.id+'\',this.value)" onblur="setValorM(\''+l.id+'\',this.value)">'
+          : valor)+
+      '</td>'+
+      '<td style="white-space:nowrap">'+
+        '<select id="sel_'+l.id+'" class="status-select '+sm.cls+'" onchange="setStatus(\''+l.id+'\',this.value)">'+opts+'</select>'+
+        '<span id="hist_'+l.id+'" onclick="verHistorico(\''+l.id+'\')" title="Ver histórico" style="display:'+(r.historico&&r.historico.length>0?'inline-block':'none')+';margin-left:4px;cursor:pointer;font-size:11px;color:var(--text2);border:1px solid var(--border);padding:1px 6px;border-radius:2px;">📋 '+(r.historico?r.historico.length:0)+'</span>'+
+      '</td>'+
       '<td>'+
-        '<input class="prox-input" type="date" value="'+esc(r.prox)+'" onchange="setProx(\''+l.id+'\',this.value)">'+
-        '<div id="visita_'+l.id+'" style="display:'+(r.status==="visita"?"flex":"none")+';align-items:center;gap:6px;margin-top:4px;">'+
-          '<input class="prox-input" type="time" value="'+esc(r.hora||'09:00')+'" style="width:70px" onchange="setHora(\''+l.id+'\',this.value)">'+
-          '<a id="gcal_'+l.id+'" href="#" target="_blank" style="font-size:10px;color:var(--green);border:1px solid rgba(0,255,157,0.3);padding:2px 8px;border-radius:2px;text-decoration:none;white-space:nowrap" onclick="atualizarBotaoGoogle(\''+l.id+'\');">📅 Google</a>'+
+        '<input class="obs-input" id="obs_'+l.id+'" maxlength="500" placeholder="Observação..." value="'+esc(r.obs)+'" oninput="contarObs(\''+l.id+'\')" onchange="setObs(\''+l.id+'\',this.value)" onblur="setObs(\''+l.id+'\',this.value)">'+
+        '<div style="font-size:9px;color:var(--text3);text-align:right;font-family:var(--mono)" id="obscnt_'+l.id+'">'+(r.obs?r.obs.length:0)+'/500</div>'+
+      '</td>'+
+      '<td>'+
+        '<div id="visita_'+l.id+'" style="display:'+(r.status==="visita"||r.status==="revisita"?"flex":"none")+';flex-direction:column;gap:4px;">'+
+          '<input class="prox-input" type="date" value="'+esc(r.dataVisita||'')+'" style="width:120px" onchange="setDataVisita(\''+l.id+'\',this.value)">'+
+          '<div style="display:flex;align-items:center;gap:6px;">'+
+            '<input class="prox-input" type="time" value="'+esc(r.hora||'09:00')+'" style="width:80px" onchange="setHora(\''+l.id+'\',this.value)">'+
+            '<a id="gcal_'+l.id+'" href="#" target="_blank" style="font-size:10px;color:var(--cyan);border:1px solid rgba(0,212,255,0.3);padding:2px 8px;border-radius:2px;text-decoration:none;white-space:nowrap" onclick="atualizarBotaoOutlook(\''+l.id+'\');">📅 Outlook</a>'+
+          '</div>'+
         '</div>'+
+        (r.status!=="visita"&&r.status!=="revisita"?"<span style='font-size:11px;color:var(--text3);'>—</span>":"")+
       '</td>'+
     '</tr>';
   }).join('');
@@ -505,7 +612,7 @@ function carregarLeads() {
     todosLeads.sort(function(a,b){
       var da=a.attributes&&a.attributes.created_at?new Date(a.attributes.created_at):0;
       var db=b.attributes&&b.attributes.created_at?new Date(b.attributes.created_at):0;
-      return da-db;
+      return db-da;
     });
 
     var corrs = {};
@@ -543,6 +650,7 @@ function carregarLeads() {
 }
 
 document.getElementById('dateFilter').value = new Date().toISOString().split('T')[0];
+verificarLoginSalvo();
 
 // Sincronizar com Firebase a cada 30 segundos
 setInterval(function(){
