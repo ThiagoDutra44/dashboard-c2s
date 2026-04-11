@@ -332,14 +332,23 @@ function verAcessos() {
 
 function aplicarFiltroUsuario() {
   var u = USUARIOS[usuarioAtual];
+  var corretorSel = document.getElementById('corretorFilter');
+  var empresaSel = document.getElementById('empresaFilter');
+
+  // Reset restrictions
+  if (corretorSel) { corretorSel.disabled = false; corretorSel.value = ''; }
+  if (empresaSel) { empresaSel.disabled = false; empresaSel.value = ''; }
+
   if (!u || !u.filtro) return;
-  var sel = document.getElementById('corretorFilter');
-  var empSel = document.getElementById('empresaFilter');
+
   if (u.filtro.tipo === 'corretor') {
-    sel.value = u.filtro.valor;
-    sel.disabled = true;
+    // Trava corretor e equipe — vê só os próprios leads
+    if (corretorSel) { corretorSel.value = u.filtro.valor; corretorSel.disabled = true; }
+    if (empresaSel) { empresaSel.disabled = true; empresaSel.value = ''; }
   } else if (u.filtro.tipo === 'empresa') {
-    if (empSel) { empSel.value = u.filtro.valor; empSel.disabled = true; }
+    // Trava equipe — vê todos da equipe mas não outras
+    if (empresaSel) { empresaSel.value = u.filtro.valor; empresaSel.disabled = true; }
+    if (corretorSel) { corretorSel.disabled = false; } // pode filtrar corretor dentro da equipe
   }
 }
 
@@ -731,6 +740,7 @@ function carregarLeads() {
     empSel.innerHTML = '<option value="">Todas</option>';
     Object.keys(emps).sort().forEach(function(e){ empSel.innerHTML+='<option value="'+e+'">'+e+'</option>'; });
     aplicarFiltroUsuario();
+    renderizarTabela();
 
     document.getElementById('ldgBar').style.width = '100%';
     document.getElementById('ldgTxt').textContent = 'CONCLUÍDO';
