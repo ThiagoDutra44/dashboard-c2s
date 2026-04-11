@@ -213,7 +213,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <thead>
         <tr>
           <th>#</th>
-          <th>Hora</th>
+          <th>Chegada</th>
           <th>Cliente</th>
           <th>Imóvel</th>
           <th>Bairro / Cidade</th>
@@ -513,7 +513,10 @@ function fmtValor(v) {
 
 function fmtHora(d) {
   if (!d) return '—';
-  return new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  var dt = new Date(d);
+  var data = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  var hora = dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  return data + '<br><span style="font-size:10px;color:var(--text3);">' + hora + '</span>';
 }
 
 function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -651,7 +654,7 @@ function renderizarTabela() {
 
     return '<tr>'+
       '<td class="td-num">'+(i+1)+'</td>'+
-      '<td class="td-hora">'+hora+'</td>'+
+      '<td class="td-hora" style="white-space:nowrap;">'+hora+'</td>'+
       '<td><div class="td-cliente-nome">'+esc(nome)+'</div>'+
            '<div class="td-cliente-tel">'+esc(tel)+'</div>'+
            (tipo?'<div class="td-tipo">'+esc(tipo)+'</div>':'')+'</td>'+
@@ -731,7 +734,12 @@ function carregarLeads() {
           return true;
         });
         document.getElementById('ldgBar').style.width = Math.min(90,Math.round(todosLeads.length/Math.max(tot,1)*80)+10)+'%';
-        document.getElementById('ldgTxt').textContent = 'CARREGANDO... '+filtrados.length+' leads seus / '+todosLeads.length+' total';
+        var u2 = usuarioAtual ? USUARIOS[usuarioAtual] : null;
+        if (u2 && u2.filtro) {
+          document.getElementById('ldgTxt').textContent = 'CARREGANDO... '+filtrados.length+' leads';
+        } else {
+          document.getElementById('ldgTxt').textContent = 'CARREGANDO... '+todosLeads.length+' / '+tot+' leads';
+        }
         if (todosLeads.length>=tot||j.data.length<50) return;
         return new Promise(function(res){ setTimeout(function(){ res(pagina(p+1)); },2000); });
       });
