@@ -8,19 +8,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#04080f;--bg2:#070f1a;--bg3:#0a1525;
-  --border:#0e2a44;--border2:#163a5a;
-  --cyan:#00d4ff;--cyan2:#0099cc;
-  --orange:#ff7b2c;--green:#00ff9d;--red:#ff4444;
-  --text:#b0c8e0;--text2:#4a7a9a;--text3:#1e3a5a;
-  --font:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace;
-}
+:root{--bg:#04080f;--bg2:#070f1a;--bg3:#0a1525;--border:#0e2a44;--border2:#163a5a;--cyan:#00d4ff;--cyan2:#0099cc;--orange:#ff7b2c;--green:#00ff9d;--red:#ff4444;--text:#b0c8e0;--text2:#4a7a9a;--text3:#1e3a5a;--font:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace;}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
 body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999;}
-.logo{font-family:var(--mono);font-size:18px;color:var(--cyan);letter-spacing:6px;margin-bottom:8px;}
-.sub{font-size:11px;letter-spacing:4px;color:var(--text3);text-transform:uppercase;margin-bottom:40px;}
-.card{background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:32px;width:100%;max-width:600px;display:flex;flex-direction:column;gap:20px;}
+.logo{font-family:var(--mono);font-size:18px;color:var(--cyan);letter-spacing:6px;margin-bottom:8px;text-align:center;}
+.sub{font-size:11px;letter-spacing:4px;color:var(--text3);text-transform:uppercase;margin-bottom:40px;text-align:center;}
+.card{background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:32px;width:100%;max-width:640px;display:flex;flex-direction:column;gap:20px;}
 .drop-area{border:2px dashed var(--border2);border-radius:4px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;}
 .drop-area:hover,.drop-area.over{border-color:var(--cyan2);background:rgba(0,212,255,0.03);}
 .drop-icon{font-size:32px;margin-bottom:12px;opacity:0.5;}
@@ -29,162 +22,202 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .btn{font-family:var(--font);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:12px;background:transparent;border:1px solid var(--cyan2);color:var(--cyan);cursor:pointer;border-radius:2px;width:100%;transition:all .2s;}
 .btn:hover{background:rgba(0,212,255,0.1);}
 .btn:disabled{opacity:0.4;cursor:not-allowed;}
-.progress-wrap{display:none;}
-.progress-label{font-family:var(--mono);font-size:11px;color:var(--text2);margin-bottom:8px;letter-spacing:1px;}
-.progress-bar-wrap{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-bottom:8px;}
-.progress-bar{height:100%;background:linear-gradient(90deg,var(--cyan2),var(--cyan));width:0%;transition:width .3s;}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;display:none;}
+.stat{background:var(--bg3);border:1px solid var(--border);padding:12px;border-radius:2px;text-align:center;}
+.stat-val{font-family:var(--mono);font-size:20px;color:var(--cyan);line-height:1;}
+.stat-lbl{font-size:10px;color:var(--text3);letter-spacing:2px;margin-top:4px;text-transform:uppercase;}
+.progress-wrap{display:none;flex-direction:column;gap:8px;}
+.progress-label{font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:1px;}
+.progress-bar-wrap{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--cyan2),var(--cyan));width:0%;transition:width .2s;}
 .progress-txt{font-family:var(--mono);font-size:12px;color:var(--cyan);}
-.log{background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:12px;font-family:var(--mono);font-size:11px;color:var(--text2);max-height:200px;overflow-y:auto;display:none;}
-.log-line{margin-bottom:4px;}
+.log{background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:12px;font-family:var(--mono);font-size:11px;color:var(--text2);max-height:180px;overflow-y:auto;display:none;}
+.log-line{margin-bottom:3px;}
 .log-line.ok{color:var(--green);}
 .log-line.err{color:var(--red);}
 .log-line.info{color:var(--cyan);}
-.result{text-align:center;display:none;}
+.result{text-align:center;display:none;flex-direction:column;gap:8px;}
 .result-num{font-family:var(--mono);font-size:48px;color:var(--green);line-height:1;}
-.result-txt{font-size:13px;color:var(--text2);margin-top:8px;}
+.result-txt{font-size:13px;color:var(--text2);}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 </style>
 </head>
 <body>
-<div class="logo">C2S · IMPORTAR</div>
-<div class="sub">Upload da Base para Firebase</div>
+<div class="logo">C2S · IMPORTAR BASE</div>
+<div class="sub">Upload do Excel para Firebase</div>
 <div class="card">
   <div class="drop-area" id="dropArea" onclick="document.getElementById('fileInput').click()">
     <div class="drop-icon">📊</div>
     <div class="drop-txt">Arraste o arquivo Excel aqui ou clique para selecionar</div>
     <div class="drop-sub" id="fileName">Nenhum arquivo selecionado</div>
   </div>
-  <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="selecionarArquivo(this)">
-  <div style="display:flex;flex-direction:column;gap:8px;">
-    <div style="font-size:11px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;">Modo de importação</div>
-    <select id="modoImport" style="font-family:var(--font);font-size:12px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:2px;outline:none;">
-      <option value="novos">Somente novos (não sobrescreve existentes)</option>
-      <option value="todos">Todos (sobrescreve se já existir)</option>
-    </select>
+  <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="processarArquivo(this.files[0])">
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat"><div class="stat-val" id="sTotal">0</div><div class="stat-lbl">Total</div></div>
+    <div class="stat"><div class="stat-val" id="sAtivo" style="color:var(--green)">0</div><div class="stat-lbl">Ativos</div></div>
+    <div class="stat"><div class="stat-val" id="sArquivo" style="color:var(--text2)">0</div><div class="stat-lbl">Arquivo</div></div>
   </div>
-  <button class="btn" id="btnImport" onclick="iniciarImport()" disabled>▶ Iniciar Importação</button>
+
+  <button class="btn" id="btnImport" onclick="iniciarImport()" disabled>▶ Iniciar Importação para Firebase</button>
+
   <div class="progress-wrap" id="progressWrap">
     <div class="progress-label" id="progressLabel">PROCESSANDO...</div>
     <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
     <div class="progress-txt" id="progressTxt">0 / 0</div>
   </div>
+
   <div class="log" id="log"></div>
+
   <div class="result" id="result">
     <div class="result-num" id="resultNum">0</div>
     <div class="result-txt" id="resultTxt">leads importados com sucesso</div>
   </div>
 </div>
+
 <script>
 var FIREBASE = 'https://c2s-operacional-default-rtdb.firebaseio.com';
-var dadosExcel = [];
-var arquivoSelecionado = false;
+
+var ATIVOS = ['Daiana Alves','Thiago Dutra','Felipe Lazzeri','Paula Mazzarella','Ravini Travassos','Ivan Coelho','Avany Castro','Claudia Azevedo','Janeci  Maguolo','Gabriel Teles Demasi','Fernando Gregores','Marcio Cidade','Valdo Dure','Emerson Leal','Luiz Carlos Cardoso','Rafael','Cris Mello','Isabelle Teixeira','Fernanda Pereira','Vanessa Cruz','Débora Freitas','Marilinda Marques','Tiago Quaresma','Mauricio Pralon'];
+
+var ESPECIAIS = ['bot_distribuicao','Conecta ImovelUm','Atendimento ImovelUm','MATRIZ','Backup Leads Vinicius','Thiago Dutra SP','Natasha Siqueira','Thaís Siqueira','Parceiros'];
+
+var dadosProcessados = {};
+
 var dropArea = document.getElementById('dropArea');
 dropArea.addEventListener('dragover', function(e){ e.preventDefault(); dropArea.classList.add('over'); });
 dropArea.addEventListener('dragleave', function(){ dropArea.classList.remove('over'); });
-dropArea.addEventListener('drop', function(e){ e.preventDefault(); dropArea.classList.remove('over'); var file = e.dataTransfer.files[0]; if (file) processarArquivo(file); });
-function selecionarArquivo(input) { if (input.files[0]) processarArquivo(input.files[0]); }
+dropArea.addEventListener('drop', function(e){ e.preventDefault(); dropArea.classList.remove('over'); if(e.dataTransfer.files[0]) processarArquivo(e.dataTransfer.files[0]); });
+
+function log(msg, tipo) {
+  var el = document.getElementById('log');
+  el.style.display = 'block';
+  var line = document.createElement('div');
+  line.className = 'log-line '+(tipo||'');
+  line.textContent = new Date().toLocaleTimeString('pt-BR')+' · '+msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function classificar(usuario, status) {
+  usuario = (usuario||'').trim();
+  status = (status||'').toLowerCase();
+  if (usuario === 'Recebimento') return status.indexOf('arquiv') >= 0 ? 'arquivo' : 'ativo';
+  if (ESPECIAIS.indexOf(usuario) >= 0) return 'arquivo';
+  if (ATIVOS.indexOf(usuario) >= 0) return 'ativo';
+  return 'arquivo';
+}
+
+function precoNum(val) {
+  try {
+    var s = String(val||'').replace('R$','').replace(/\s/g,'');
+    var m = s.match(/[\d.,]+/);
+    if (!m) return 0;
+    var n = m[0].replace(/\./g,'').replace(',','.');
+    return parseFloat(n)||0;
+  } catch(e){ return 0; }
+}
+
 function processarArquivo(file) {
-  document.getElementById('fileName').textContent = file.name + ' (' + (file.size/1024/1024).toFixed(1) + ' MB)';
+  if (!file) return;
+  document.getElementById('fileName').textContent = file.name+' ('+(file.size/1024/1024).toFixed(1)+' MB)';
+  log('Lendo arquivo Excel...','info');
   var reader = new FileReader();
   reader.onload = function(e) {
-    adicionarLog('Lendo arquivo...', 'info');
     var wb = XLSX.read(e.target.result, {type:'binary'});
     var ws = wb.Sheets[wb.SheetNames[0]];
-    var data = XLSX.utils.sheet_to_json(ws, {defval:''});
-    dadosExcel = data;
-    adicionarLog('Arquivo lido: ' + data.length.toLocaleString('pt-BR') + ' registros encontrados', 'ok');
+    var rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+    log('Arquivo lido: '+rows.length.toLocaleString('pt-BR')+' registros','ok');
+    log('Classificando leads...','info');
+    dadosProcessados = {};
+    var ativos = 0, arquivo = 0;
+    rows.forEach(function(row) {
+      var id = String(row['ID']||'').split('.')[0];
+      if (!id) return;
+      var usuario = String(row['Usuário responsável atual']||'').trim();
+      var status = String(row['Status do lead']||'');
+      var classif = classificar(usuario, status);
+      if (classif === 'ativo') ativos++; else arquivo++;
+      dadosProcessados[id] = {
+        id: id,
+        classificacao: classif,
+        equipe: String(row['Equipe']||''),
+        cliente_nome: String(row['Nome do cliente']||''),
+        cliente_email: String(row['Email do cliente']||''),
+        cliente_telefone: String(row['Telefone formatado']||''),
+        cidade: String(row['Cidade']||'').trim(),
+        bairro: String(row['Bairro']||'').trim(),
+        fonte: String(row['Fonte do lead']||''),
+        canal: String(row['Canal']||''),
+        corretor: usuario,
+        criado_em: String(row['Criado em']||''),
+        status_c2s: status,
+        natureza: String(row['Natureza da negociação']||''),
+        imovel_ref: String(row['Referência da propriedade']||''),
+        imovel_titulo: String(row['Título do imóvel']||''),
+        preco: precoNum(row['Preço']),
+        negocio_fechado: String(row['Negócio fechado em']||''),
+        valor_fechamento: String(row['Valor real do fechamento']||''),
+        observacoes: String(row['Observações do lead']||''),
+        atualizado_em: String(row['Atualizado em']||''),
+        origem: 'excel'
+      };
+    });
+    var total = Object.keys(dadosProcessados).length;
+    log('Classificados: '+ativos.toLocaleString('pt-BR')+' ativos, '+arquivo.toLocaleString('pt-BR')+' arquivo','ok');
+    document.getElementById('sTotal').textContent = total.toLocaleString('pt-BR');
+    document.getElementById('sAtivo').textContent = ativos.toLocaleString('pt-BR');
+    document.getElementById('sArquivo').textContent = arquivo.toLocaleString('pt-BR');
+    document.getElementById('statsRow').style.display = 'grid';
     document.getElementById('btnImport').disabled = false;
-    arquivoSelecionado = true;
   };
   reader.readAsBinaryString(file);
 }
-function adicionarLog(msg, tipo) {
-  var log = document.getElementById('log');
-  log.style.display = 'block';
-  var line = document.createElement('div');
-  line.className = 'log-line ' + (tipo||'');
-  line.textContent = new Date().toLocaleTimeString('pt-BR') + ' · ' + msg;
-  log.appendChild(line);
-  log.scrollTop = log.scrollHeight;
-}
-function converterLead(row) {
-  var preco = 0;
-  if (row['Preço']) { var p = String(row['Preço']).replace('R$','').replace(/\./g,'').replace(',','.').trim(); preco = parseFloat(p) || 0; }
-  return {
-    id: String(row['ID'] || ''),
-    equipe: String(row['Equipe'] || ''),
-    cliente_nome: String(row['Nome do cliente'] || ''),
-    cliente_email: String(row['Email do cliente'] || ''),
-    cliente_telefone: String(row['Telefone formatado'] || ''),
-    cidade: String(row['Cidade'] || '').trim(),
-    bairro: String(row['Bairro'] || '').trim(),
-    fonte: String(row['Fonte do lead'] || ''),
-    canal: String(row['Canal'] || ''),
-    corretor: String(row['Usuário responsável atual'] || ''),
-    criado_em: String(row['Criado em'] || ''),
-    status: String(row['Status do lead'] || ''),
-    natureza: String(row['Natureza da negociação'] || ''),
-    imovel_ref: String(row['Referência da propriedade'] || ''),
-    imovel_titulo: String(row['Título do imóvel'] || ''),
-    preco: preco,
-    negocio_fechado: String(row['Negócio fechado em'] || ''),
-    valor_fechamento: String(row['Valor real do fechamento'] || ''),
-    observacoes: String(row['Observações do lead'] || ''),
-    atualizado_em: String(row['Atualizado em'] || ''),
-    origem: 'excel'
-  };
-}
+
 async function iniciarImport() {
-  if (!arquivoSelecionado || dadosExcel.length === 0) return;
-  var btn = document.getElementById('btnImport');
-  btn.disabled = true;
-  document.getElementById('progressWrap').style.display = 'block';
+  var total = Object.keys(dadosProcessados).length;
+  if (total === 0) return;
+  document.getElementById('btnImport').disabled = true;
+  document.getElementById('progressWrap').style.display = 'flex';
   document.getElementById('result').style.display = 'none';
-  var modo = document.getElementById('modoImport').value;
-  var total = dadosExcel.length;
-  var importados = 0; var erros = 0; var pulados = 0;
-  adicionarLog('Iniciando importação de ' + total.toLocaleString('pt-BR') + ' leads...', 'info');
-  var existentes = {};
-  if (modo === 'novos') {
-    adicionarLog('Verificando leads já existentes no Firebase...', 'info');
-    document.getElementById('progressLabel').textContent = 'VERIFICANDO EXISTENTES...';
-    try {
-      var resp = await fetch(FIREBASE + '/leads.json?shallow=true');
-      if (resp.ok) { var keys = await resp.json(); existentes = keys || {}; adicionarLog('Firebase tem ' + Object.keys(existentes).length.toLocaleString('pt-BR') + ' leads existentes', 'info'); }
-    } catch(e) { adicionarLog('Aviso: ' + e.message, 'err'); }
-  }
-  document.getElementById('progressLabel').textContent = 'IMPORTANDO LEADS...';
-  var LOTE = 100;
-  for (var i = 0; i < total; i += LOTE) {
-    var lote = dadosExcel.slice(i, i + LOTE);
+  var keys = Object.keys(dadosProcessados);
+  var LOTE = 500;
+  var importados = 0; var erros = 0;
+  log('Iniciando upload de '+total.toLocaleString('pt-BR')+' leads para Firebase...','info');
+  for (var i = 0; i < keys.length; i += LOTE) {
+    var loteKeys = keys.slice(i, i+LOTE);
     var payload = {};
-    lote.forEach(function(row) {
-      var lead = converterLead(row);
-      if (!lead.id) return;
-      if (modo === 'novos' && existentes[lead.id]) { pulados++; return; }
-      payload[lead.id] = lead;
-    });
-    if (Object.keys(payload).length > 0) {
-      try {
-        var r = await fetch(FIREBASE + '/leads.json', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-        if (r.ok) { importados += Object.keys(payload).length; }
-        else { erros += Object.keys(payload).length; adicionarLog('Erro lote ' + (Math.floor(i/LOTE)+1) + ': HTTP ' + r.status, 'err'); }
-      } catch(e) { erros += Object.keys(payload).length; adicionarLog('Erro: ' + e.message, 'err'); }
+    loteKeys.forEach(function(k){ payload[k] = dadosProcessados[k]; });
+    document.getElementById('progressLabel').textContent = 'ENVIANDO PARA FIREBASE...';
+    try {
+      var resp = await fetch(FIREBASE+'/leads.json', {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (resp.ok) {
+        importados += loteKeys.length;
+      } else {
+        erros += loteKeys.length;
+        log('Erro lote '+(Math.floor(i/LOTE)+1)+': HTTP '+resp.status,'err');
+      }
+    } catch(e) {
+      erros += loteKeys.length;
+      log('Erro: '+e.message,'err');
     }
-    var pct = Math.round((i + LOTE) / total * 100);
-    document.getElementById('progressBar').style.width = Math.min(100, pct) + '%';
-    document.getElementById('progressTxt').textContent = Math.min(i + LOTE, total).toLocaleString('pt-BR') + ' / ' + total.toLocaleString('pt-BR') + ' processados';
-    await new Promise(function(r){ setTimeout(r, 50); });
+    var pct = Math.round((i+LOTE)/keys.length*100);
+    document.getElementById('progressBar').style.width = Math.min(100,pct)+'%';
+    document.getElementById('progressTxt').textContent = Math.min(i+LOTE,keys.length).toLocaleString('pt-BR')+' / '+keys.length.toLocaleString('pt-BR');
+    await new Promise(function(r){ setTimeout(r,100); });
   }
   document.getElementById('progressBar').style.width = '100%';
-  document.getElementById('progressLabel').textContent = 'CONCLUÍDO';
-  adicionarLog('Importados: ' + importados.toLocaleString('pt-BR'), 'ok');
-  if (pulados > 0) adicionarLog('Pulados (já existiam): ' + pulados.toLocaleString('pt-BR'), 'info');
-  if (erros > 0) adicionarLog('Erros: ' + erros.toLocaleString('pt-BR'), 'err');
-  document.getElementById('result').style.display = 'block';
+  document.getElementById('progressLabel').textContent = 'CONCLUÍDO ✅';
+  log('Importados: '+importados.toLocaleString('pt-BR'),'ok');
+  if (erros > 0) log('Erros: '+erros.toLocaleString('pt-BR'),'err');
+  document.getElementById('result').style.display = 'flex';
   document.getElementById('resultNum').textContent = importados.toLocaleString('pt-BR');
-  document.getElementById('resultTxt').textContent = 'leads importados' + (pulados > 0 ? ' · ' + pulados.toLocaleString('pt-BR') + ' já existiam' : '');
-  btn.disabled = false;
+  document.getElementById('resultTxt').textContent = 'leads importados · '+erros+' erros';
+  document.getElementById('btnImport').disabled = false;
 }
 </script>
 </body>
