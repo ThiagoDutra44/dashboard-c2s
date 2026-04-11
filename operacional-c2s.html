@@ -242,8 +242,8 @@ var USUARIOS = {
   'Daiana Alves':   {senha:'Da@7843#Kx', perfil:'gestor',  filtro:{tipo:'empresa', valor:'ImovelUm Imobiliária'}},
   'Felipe Lazzeri': {senha:'Fe@3291#Lz', perfil:'gestor',  filtro:{tipo:'empresa', valor:'Equipe Copacabana'}},
   'Rafael Jóia':    {senha:'Ra@6514#Rj', perfil:'gestor',  filtro:{tipo:'empresa', valor:'Equipe Copacabana'}},
-  'Cris Mello': {senha:'Cr@9072#Cm', perfil:'corretor',filtro:{tipo:'corretor', valor:'Cris Mello'}},
-  'Avany Castro':   {senha:'Av@5183#Ac', perfil:'corretor',filtro:{tipo:'corretor', valor:'Avany Castro'}}
+  'Cris Mello':   {senha:'Cr@9072#Cm', perfil:'corretor', equipe:'Equipe CEO Barra',   filtro:{tipo:'corretor', valor:'Cris Mello'}},
+  'Avany Castro':  {senha:'Av@5183#Ac', perfil:'corretor', equipe:'Equipe Copacabana', filtro:{tipo:'corretor', valor:'Avany Castro'}}
 };
 var usuarioAtual = null;
 var todosLeads = [];
@@ -344,7 +344,17 @@ function aplicarFiltroUsuario() {
   if (u.filtro.tipo === 'corretor') {
     // Trava corretor e equipe — vê só os próprios leads
     if (corretorSel) { corretorSel.value = u.filtro.valor; corretorSel.disabled = true; }
-    if (empresaSel) { empresaSel.disabled = true; empresaSel.value = ''; }
+    if (empresaSel) {
+      empresaSel.disabled = true;
+      if (u.equipe) {
+        // Adiciona a equipe como opção e seleciona
+        var opt = document.createElement('option');
+        opt.value = u.equipe;
+        opt.textContent = u.equipe;
+        empresaSel.appendChild(opt);
+        empresaSel.value = u.equipe;
+      }
+    }
   } else if (u.filtro.tipo === 'empresa') {
     // Trava equipe — vê todos da equipe mas não outras
     if (empresaSel) { empresaSel.value = u.filtro.valor; empresaSel.disabled = true; }
@@ -711,8 +721,17 @@ function carregarLeads() {
         if (!j.data||!j.data.length) return;
         todosLeads = todosLeads.concat(j.data);
         var tot = j.meta&&j.meta.total?j.meta.total:todosLeads.length;
+        var u = usuarioAtual ? USUARIOS[usuarioAtual] : null;
+        var filtrados = todosLeads.filter(function(l) {
+          var a = l.attributes||{};
+          if (u && u.filtro) {
+            if (u.filtro.tipo === 'corretor' && (a.seller?a.seller.name:'') !== u.filtro.valor) return false;
+            if (u.filtro.tipo === 'empresa' && (a.company?a.company.name:'') !== u.filtro.valor) return false;
+          }
+          return true;
+        });
         document.getElementById('ldgBar').style.width = Math.min(90,Math.round(todosLeads.length/Math.max(tot,1)*80)+10)+'%';
-        document.getElementById('ldgTxt').textContent = 'CARREGANDO... '+todosLeads.length+' / '+tot;
+        document.getElementById('ldgTxt').textContent = 'CARREGANDO... '+filtrados.length+' leads seus / '+todosLeads.length+' total';
         if (todosLeads.length>=tot||j.data.length<50) return;
         return new Promise(function(res){ setTimeout(function(){ res(pagina(p+1)); },2000); });
       });
