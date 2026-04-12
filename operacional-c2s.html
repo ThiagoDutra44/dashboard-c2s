@@ -180,6 +180,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <option value="desc">Mais recente primeiro</option>
     </select>
     <button class="btn" id="btnLoad" onclick="carregarLeads()">▶ Carregar</button>
+    <button class="btn" id="btnArquivo" onclick="toggleArquivo()" style="display:none;border-color:var(--text3);color:var(--text2);">📁 Ver Arquivo</button>
     <button class="btn danger" onclick="limparDados()">✕ Limpar Registros</button>
   </div>
 
@@ -261,6 +262,7 @@ var USUARIOS = {
 };
 var usuarioAtual = null;
 var todosLeads = [];
+var verArquivo = false;
 var paginaAtual = 1;
 var leadsPorPagina = 50;
 var registros = {};
@@ -318,6 +320,8 @@ function entrarNoApp(user) {
   document.getElementById('nomeUsuario').textContent = user;
   var btnA = document.getElementById('btnAcessos');
   if (btnA) btnA.style.display = user === 'Thiago' ? 'inline-block' : 'none';
+  var btnArq = document.getElementById('btnArquivo');
+  if (btnArq) btnArq.style.display = user === 'Thiago' ? 'inline-block' : 'none';
   aplicarFiltroUsuario();
   carregarSalvos();
 }
@@ -559,6 +563,16 @@ function leadsFiltrados() {
     var a = l.attributes||{};
     var empresa = a.company?a.company.name:'';
     var corretor = a.seller?a.seller.name:'';
+    var classif = l._classificacao || (l.attributes ? 'ativo' : 'ativo');
+
+    // Filtro de arquivo — só Thiago pode ver arquivo
+    if (usuarioAtual === 'Thiago') {
+      if (!verArquivo && classif === 'arquivo') return false;
+      if (verArquivo && classif !== 'arquivo') return false;
+    } else {
+      // Outros usuários nunca veem arquivo
+      if (classif === 'arquivo') return false;
+    }
 
     // Aplicar restrição do usuário logado
     if (u && u.filtro) {
@@ -655,6 +669,22 @@ function filtrarPorStatus(status) {
   document.getElementById('statusFilter').value = status;
   renderizarTabela();
   document.getElementById('tableWrap').scrollIntoView({behavior:'smooth'});
+}
+
+function toggleArquivo() {
+  verArquivo = !verArquivo;
+  var btn = document.getElementById('btnArquivo');
+  if (verArquivo) {
+    btn.textContent = '📁 Ocultar Arquivo';
+    btn.style.borderColor = 'var(--orange)';
+    btn.style.color = 'var(--orange)';
+  } else {
+    btn.textContent = '📁 Ver Arquivo';
+    btn.style.borderColor = 'var(--text3)';
+    btn.style.color = 'var(--text2)';
+  }
+  resetPagina();
+  renderizarTabela();
 }
 
 function resetPagina() { paginaAtual = 1; }
