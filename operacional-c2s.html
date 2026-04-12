@@ -180,6 +180,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <option value="desc">Mais recente primeiro</option>
     </select>
     <button class="btn" id="btnLoad" onclick="carregarLeads()">▶ Carregar</button>
+    <button class="btn" id="btnForceApi" onclick="carregarLeads(true)" style="border-color:var(--orange);color:var(--orange);font-size:10px;" title="Força busca da API mesmo para períodos históricos">⚡ Forçar API</button>
     <button class="btn" id="btnArquivo" onclick="toggleArquivo()" style="display:none;border-color:var(--text3);color:var(--text2);">📁 Ver Arquivo</button>
     <button class="btn danger" onclick="limparDados()">✕ Limpar Registros</button>
   </div>
@@ -804,7 +805,7 @@ function renderizarTabela() {
   atualizarContadores();
 }
 
-function carregarLeads() {
+function carregarLeads(forceApi) {
   var btn = document.getElementById('btnLoad');
   btn.disabled = true;
   document.getElementById('tableWrap').style.display = 'none';
@@ -822,11 +823,10 @@ function carregarLeads() {
   var hoje = new Date();
   var fromDateObj = new Date(fromDate);
   var toDateObj = new Date(toDate);
-  var diffPeriodo = Math.floor((toDateObj - fromDateObj) / (1000*60*60*24));
-  var diffHoje = Math.floor((hoje - fromDateObj) / (1000*60*60*24));
-  // Usa API só se for apenas hoje ou ontem (período curto e recente)
-  // Para qualquer período maior ou mais antigo, usa Firebase
-  var ehRecente = diffPeriodo <= 1 && diffHoje <= 1;
+  // Usa API se o período FROM for nos últimos 7 dias
+  var msUmDia = 1000*60*60*24;
+  var diffFromHoje = Math.floor((hoje - fromDateObj) / msUmDia);
+  var ehRecente = forceApi || diffFromHoje <= 7;
 
   if (ehRecente) {
     // Buscar da API do C2S (dados frescos)
