@@ -85,6 +85,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .s-aguard{background:rgba(255,123,44,0.08);border-color:rgba(255,123,44,0.25);color:var(--orange);}
 .s-permuta{background:rgba(255,170,0,0.08);border-color:rgba(255,170,0,0.25);color:#ffaa00;}
 .s-parceria{background:rgba(0,255,157,0.08);border-color:rgba(0,255,157,0.25);color:var(--green);}
+.aguard-sync{border:1px solid var(--orange)!important;background:rgba(255,123,44,0.06)!important;}
+.aguard-sync td{border-bottom:1px solid rgba(255,123,44,0.15)!important;}
 .s-conversando{background:rgba(0,180,255,0.08);border-color:rgba(0,180,255,0.25);color:#00b4ff;}
 .s-parou{background:rgba(120,120,120,0.08);border-color:rgba(120,120,120,0.25);color:#888888;}
 .s-semtel{background:rgba(255,80,80,0.08);border-color:rgba(255,80,80,0.25);color:#ff5050;}
@@ -438,7 +440,7 @@ function getLeadKey(l) {
 }
 
 function getReg(id) {
-  if (!registros[id]) registros[id] = {status:'novo',obs:'',hora:'',dataVisita:'',bairroM:'',cidadeM:'',valorM:'',historico:[]};
+  if (!registros[id]) registros[id] = {status:'novo',obs:'',hora:'',dataVisita:'',bairroM:'',cidadeM:'',valorM:'',historico:[],aguardandoSync:false};
   return registros[id];
 }
 
@@ -495,6 +497,19 @@ function verHistorico(id) {
 }
 
 function setHora(id, val) { getReg(id).hora = val; salvar(); atualizarBotaoOutlook(id); }
+
+function reatribuir(leadId, urlC2S) {
+  getReg(leadId).aguardandoSync = true;
+  salvar();
+  // Atualizar visual da linha
+  var row = document.getElementById('row_'+leadId);
+  if (row) {
+    row.classList.add('aguard-sync');
+    var badge = document.getElementById('sync_'+leadId);
+    if (badge) badge.style.display = 'inline-flex';
+  }
+  window.open(urlC2S, '_blank');
+}
 function setBairroM(id, val) { getReg(id).bairroM = val; salvar(); }
 function setCidadeM(id, val) { getReg(id).cidadeM = val; salvar(); }
 function setValorM(id, val) { getReg(id).valorM = val; salvar(); }
@@ -727,6 +742,7 @@ function renderizarTabela() {
   }
 
   tbody.innerHTML = leadsPagina.map(function(l, i) {
+    var aguardSync = getReg(getLeadKey(l)||l.id).aguardandoSync || false;
     var a = l.attributes||{};
     var leadKey = getLeadKey(l)||l.id;
     var r = getReg(leadKey);
@@ -758,7 +774,8 @@ function renderizarTabela() {
       return '<option value="'+k+'"'+(r.status===k?' selected':'')+'>'+SMAP[k].label+'</option>';
     }).join('');
 
-    return '<tr>'+
+    return '<tr id="row_'+leadKey+'" class="'+(aguardSync?'aguard-sync':'')+'">'+
+      '<td style="width:4px;padding:0;background:'+(aguardSync?'var(--orange)':'transparent')+';"></td>'+
       '<td class="td-num">'+(i+1)+'</td>'+
       '<td class="td-hora" style="white-space:nowrap;">'+hora+'</td>'+
       '<td><div class="td-cliente-nome">'+esc(nome)+'</div>'+
@@ -775,7 +792,15 @@ function renderizarTabela() {
           : '<input class="obs-input" style="width:90px;font-size:10px" placeholder="Cidade..." value="'+esc(r.cidadeM||'')+'" id="cidade_'+l.id+'" onchange="setCidadeM(\''+leadKey+'\',this.value)" onblur="setCidadeM(\''+leadKey+'\',this.value)">')+
       '</td>'+
       '<td class="td-fonte">'+esc(fonte)+'</td>'+
-      '<td class="td-corretor">'+esc(corretor)+'</td>'+
+      '<td class="td-corretor">'+
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'+
+          '<span>'+esc(corretor)+'</span>'+
+          '<span id="sync_'+leadKey+'" style="display:'+(aguardSync?'inline-flex':'none')+';align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--orange);border:1px solid var(--orange);padding:1px 5px;border-radius:2px;letter-spacing:1px;" title="Aguardando sincronização das 03h">🔄 SYNC</span>'+
+        '</div>'+
+        (usuarioAtual === 'Thiago' || usuarioAtual === 'Daiana Alves'
+          ? '<div onclick="reatribuir(\''+leadKey+'\',\'https://app.contact2sale.com/leads/'+l.id+'\')" style="font-size:9px;color:var(--cyan2);cursor:pointer;margin-top:2px;letter-spacing:1px;" title="Abrir lead no C2S para reatribuir">↗ Reatribuir</div>'
+          : '')+
+      '</td>'+
       '<td class="td-valor">'+
         (valorEditavel
           ? '<input class="obs-input" style="width:80px;font-family:var(--mono);font-size:11px" placeholder="R$..." value="'+esc(r.valorM||'')+'" onchange="setValorM(\''+leadKey+'\',this.value)" onblur="setValorM(\''+leadKey+'\',this.value)">'
