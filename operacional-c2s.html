@@ -78,6 +78,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .leads-table{width:100%;border-collapse:collapse;}
 
 .status-select{font-family:var(--font);font-size:11px;font-weight:600;padding:5px 8px;border-radius:3px;border:1px solid;cursor:pointer;outline:none;min-width:170px;transition:all .2s;}
+.status-select option{background:#0a1525;color:#d0e8f8;font-weight:600;}
 .s-novo{background:rgba(0,212,255,0.08);border-color:rgba(0,212,255,0.25);color:var(--cyan);}
 .s-atendeu{background:rgba(0,255,157,0.08);border-color:rgba(0,255,157,0.25);color:var(--green);}
 .s-nao{background:rgba(255,68,68,0.08);border-color:rgba(255,68,68,0.25);color:var(--red);}
@@ -183,6 +184,11 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
     <input type="text" class="finput" id="buscaImovel" placeholder="🔍 Imóvel..." style="width:130px" oninput="resetPagina();renderizarTabela();">
     <input type="number" class="finput" id="valorMin" placeholder="R$ min" style="width:80px" oninput="resetPagina();renderizarTabela();">
     <input type="number" class="finput" id="valorMax" placeholder="R$ max" style="width:80px" oninput="resetPagina();renderizarTabela();">
+    <select class="fselect" id="naturezaFilter" onchange="resetPagina();renderizarTabela();">
+      <option value="">Venda + Locação</option>
+      <option value="Compra">Venda</option>
+      <option value="Aluguel">Locação</option>
+    </select>
     <span class="flbl">Ordem</span>
     <select class="fselect" id="ordemFilter" onchange="resetPagina();renderizarTabela();">
       <option value="asc">Mais antigo primeiro</option>
@@ -616,40 +622,76 @@ function leadsFiltrados() {
   var buscaImovel = (document.getElementById('buscaImovel').value||'').toLowerCase().trim();
   var valorMin = parseFloat(document.getElementById('valorMin').value)||0;
   var valorMax = parseFloat(document.getElementById('valorMax').value)||0;
+  var naturezaFiltro = document.getElementById('naturezaFilter').value;
   var u = usuarioAtual ? USUARIOS[usuarioAtual] : null;
 
   return todosLeads.filter(function(l) {
     var a = l.attributes||{};
-    var empresa = a.company?a.company.name:'';
-    var corretor = a.seller?a.seller.name:'';
-    var classif = l._classificacao || (l.attributes ? 'ativo' : 'ativo');
+    var empresa = (a.company?a.company.name:'').trim();
+    var corretor = (a.seller?a.seller.name:'').trim();
+    var classif = l._classificacao || 'ativo';
 
     // Filtro de arquivo — só Thiago pode ver arquivo
     if (usuarioAtual === 'Thiago') {
       if (!verArquivo && classif === 'arquivo') return false;
       if (verArquivo && classif !== 'arquivo') return false;
     } else {
-      // Outros usuários nunca veem arquivo
-      if (classif === 'arquivo') return false;
+      // Outros usuários nunca veem arquivo — EXCETO se o lead for do próprio corretor
+      var u2 = usuarioAtual ? USUARIOS[usuarioAtual] : null;
+      var ehProprioCorretor = u2 && u2.filtro && u2.filtro.tipo === 'corretor' && corretor === u2.filtro.valor;
+      if (classif === 'arquivo' && !ehProprioCorretor) return false;
     }
 
-    // Aplicar restrição do usuário logado
+    // Aplicar restrição do usuário logado — direto, sem depender do select
     if (u && u.filtro) {
       if (u.filtro.tipo === 'corretor' && corretor !== u.filtro.valor) return false;
       if (u.filtro.tipo === 'empresa' && empresa !== u.filtro.valor) return false;
+    } else {
+      // Só aplica filtros de select para usuários sem restrição (Thiago)
+      if (ef && empresa !== ef) return false;
+      if (cf && corretor !== cf) return false;
+    }
+    if (sf && getReg(getLeadKey(l)||l.id).status !== sf) return false;
+    var reg = getReg(getLeadKey(l)||l.id);
+
+    // Busca por cliente: nome, telefone, email
+    if (buscaCliente) {
+      var txtCliente = [
+        a.customer&&a.customer.name,
+        a.customer&&a.customer.phone,
+        a.customer&&a.customer.email
+      ].join(' ').toLowerCase();
+      if (!txtCliente.includes(buscaCliente)) return false;
     }
 
-    if (ef && empresa !== ef) return false;
-    if (cf && corretor !== cf) return false;
-    if (sf && getReg(getLeadKey(l)||l.id).status !== sf) return false;
-    if (buscaCliente && !(a.customer&&a.customer.name||'').toLowerCase().includes(buscaCliente)) return false;
+    // Busca por bairro: bairro, cidade, título do imóvel, campos manuais
     if (buscaBairro) {
-      var b = ((a.product&&a.product.neighbourhood)||'').toLowerCase();
-      if (!b.includes(buscaBairro)) return false;
+      var txtBairro = [
+        a.product&&a.product.neighbourhood,
+        a.product&&a.product.city,
+        a.product&&a.product.description,
+        reg.bairroM, reg.cidadeM
+      ].join(' ').toLowerCase();
+      if (!txtBairro.includes(buscaBairro)) return false;
     }
-    if (buscaImovel && !(a.product&&a.product.description||'').toLowerCase().includes(buscaImovel)) return false;
+
+    // Busca por imóvel: título e referência
+    if (buscaImovel) {
+      var txtImovel = [
+        a.product&&a.product.description,
+        a.product&&a.product.prop_ref
+      ].join(' ').toLowerCase();
+      if (!txtImovel.includes(buscaImovel)) return false;
+    }
     if (valorMin > 0 && (a.product&&a.product.price_float||0) < valorMin) return false;
     if (valorMax > 0 && (a.product&&a.product.price_float||0) > valorMax) return false;
+    if (naturezaFiltro) {
+      var nat = ((a.product&&a.product.real_estate_detail&&a.product.real_estate_detail.negotiation_name)||'').toLowerCase();
+      var desc = ((a.product&&a.product.description)||'').toLowerCase();
+      var ehLocacao = nat === 'aluguel' || desc.includes('aluguel') || desc.includes('locação') || desc.includes('para alugar') || desc.includes('locacao');
+      if (naturezaFiltro === 'Aluguel' && !ehLocacao) return false;
+      if (naturezaFiltro === 'Compra' && ehLocacao) return false;
+    }
     return true;
   });
 }
@@ -826,8 +868,8 @@ function renderizarTabela() {
         '<div class="td-cliente-nome">'+esc(nome)+'</div>'+
         '<div style="display:flex;align-items:center;gap:6px;margin-top:2px;">'+
           '<span class="td-cliente-tel">'+esc(tel)+'</span>'+
-          (tel ? '<a href="https://wa.me/55'+tel.replace(/[^0-9]/g,"")+'" target="_blank" style="font-size:16px;text-decoration:none;line-height:1;" title="WhatsApp">📱</a>' : '')+
-          (a.customer&&a.customer.email ? '<a href="mailto:'+a.customer.email+'" style="font-size:16px;text-decoration:none;line-height:1;" title="Enviar e-mail">📧</a>' : '')+
+          (tel ? '<a href="https://wa.me/55"+tel.replace(/[^0-9]/g,"")+" " target="_blank" style="font-size:13px;color:#25D366;text-decoration:none;font-weight:700;border:1px solid #25D366;padding:1px 5px;border-radius:2px;" title="WhatsApp">WA</a>' : '')+
+          (a.customer&&a.customer.email ? ' <a href="mailto:"+a.customer.email+" " style="font-size:13px;color:var(--cyan);text-decoration:none;font-weight:700;border:1px solid var(--cyan2);padding:1px 5px;border-radius:2px;" title="Email">@</a>' : '')+
         '</div>'+
            (tipo?'<div class="td-tipo">'+esc(tipo)+'</div>':'')+'</td>'+
       '<td class="td-imovel" title="'+esc(imovel)+'">'+esc(imovel)+'</td>'+
