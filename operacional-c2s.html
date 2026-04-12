@@ -498,9 +498,19 @@ function verHistorico(id) {
 
 function setHora(id, val) { getReg(id).hora = val; salvar(); atualizarBotaoOutlook(id); }
 
-function reatribuir(leadId, urlC2S) {
+function reatribuir(leadId, urlC2S, nomeCliente) {
   getReg(leadId).aguardandoSync = true;
   salvar();
+  // Copiar nome do cliente para clipboard
+  if (nomeCliente) {
+    try {
+      navigator.clipboard.writeText(nomeCliente).then(function() {
+        mostrarToast('📋 "'+nomeCliente+'" copiado! Cole no campo de busca do C2S.');
+      }).catch(function() {
+        mostrarToast('📋 '+nomeCliente+' — cole no campo de busca do C2S.');
+      });
+    } catch(e) {}
+  }
   // Atualizar visual da linha
   var row = document.getElementById('row_'+leadId);
   if (row) {
@@ -509,6 +519,20 @@ function reatribuir(leadId, urlC2S) {
     if (badge) badge.style.display = 'inline-flex';
   }
   window.open(urlC2S, '_blank');
+}
+
+function mostrarToast(msg) {
+  var t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--orange);color:var(--orange);font-family:var(--mono);font-size:12px;padding:10px 20px;border-radius:4px;z-index:9999;letter-spacing:1px;transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.style.opacity = '0'; }, 4000);
 }
 function setBairroM(id, val) { getReg(id).bairroM = val; salvar(); }
 function setCidadeM(id, val) { getReg(id).cidadeM = val; salvar(); }
@@ -798,7 +822,7 @@ function renderizarTabela() {
           '<span id="sync_'+leadKey+'" style="display:'+(aguardSync?'inline-flex':'none')+';align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--orange);border:1px solid var(--orange);padding:1px 5px;border-radius:2px;letter-spacing:1px;" title="Aguardando sincronização das 03h">🔄 SYNC</span>'+
         '</div>'+
         (usuarioAtual === 'Thiago' || usuarioAtual === 'Daiana Alves'
-          ? '<div onclick="reatribuir(\''+leadKey+'\',\'https://api.contact2sale.com/webapp/leads?search='+encodeURIComponent(a.customer?a.customer.name:'')+'\')" style="font-size:9px;color:var(--cyan2);cursor:pointer;margin-top:2px;letter-spacing:1px;" title="Abrir lead no C2S para reatribuir">↗ Reatribuir</div>'
+          ? '<div onclick="reatribuir(\''+leadKey+'\',\'https://api.contact2sale.com/webapp/leads\',\''+esc(a.customer?a.customer.name:'')+'\')" style="font-size:9px;color:var(--cyan2);cursor:pointer;margin-top:2px;letter-spacing:1px;" title="Abrir lead no C2S para reatribuir">↗ Reatribuir</div>'
           : '')+
       '</td>'+
       '<td class="td-valor">'+
