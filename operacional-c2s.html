@@ -798,7 +798,7 @@ function renderizarTabela() {
           '<span id="sync_'+leadKey+'" style="display:'+(aguardSync?'inline-flex':'none')+';align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--orange);border:1px solid var(--orange);padding:1px 5px;border-radius:2px;letter-spacing:1px;" title="Aguardando sincronização das 03h">🔄 SYNC</span>'+
         '</div>'+
         (usuarioAtual === 'Thiago' || usuarioAtual === 'Daiana Alves'
-          ? '<div onclick="reatribuir(\''+leadKey+'\',\'https://app.contact2sale.com/leads/'+l.id+'\')" style="font-size:9px;color:var(--cyan2);cursor:pointer;margin-top:2px;letter-spacing:1px;" title="Abrir lead no C2S para reatribuir">↗ Reatribuir</div>'
+          ? '<div onclick="reatribuir(\''+leadKey+'\',\'https://api.contact2sale.com/webapp/leads/'+l.id+'\')" style="font-size:9px;color:var(--cyan2);cursor:pointer;margin-top:2px;letter-spacing:1px;" title="Abrir lead no C2S para reatribuir">↗ Reatribuir</div>'
           : '')+
       '</td>'+
       '<td class="td-valor">'+
