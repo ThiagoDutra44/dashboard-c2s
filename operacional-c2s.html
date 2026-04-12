@@ -759,64 +759,18 @@ function carregarLeads() {
     });
 
   } else {
-    // Buscar do Firebase (histórico) — instantâneo!
+    // Buscar do Firebase via proxy (histórico)
     document.getElementById('ldgTxt').textContent = 'BUSCANDO DO FIREBASE...';
-    var fromTs = new Date(fromDate+'T00:00:00').getTime();
-    var toTs = new Date(toDate+'T23:59:59').getTime();
-
-    fetch(FIREBASE+'/leads.json')
-      .then(function(r){ return r.json(); })
+    fetch(PROXY+'/firebase/leads?from='+fromDate+'&to='+toDate)
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(function(data) {
-        if (!data) { finalizarCarregamento(btn); return; }
-        var leadsFirebase = Object.values(data);
-        document.getElementById('ldgBar').style.width = '50%';
-        document.getElementById('ldgTxt').textContent = 'FILTRANDO '+leadsFirebase.length.toLocaleString('pt-BR')+' registros...';
-
-        // Filtrar por período e converter para formato compatível
-        todosLeads = leadsFirebase.filter(function(l) {
-          if (!l.criado_em) return false;
-          // Parse da data no formato dd/mm/yyyy hh:mm:ss
-          var partes = l.criado_em.split(' ');
-          if (!partes[0]) return false;
-          var dp = partes[0].split('/');
-          if (dp.length !== 3) return false;
-          var dataStr = dp[2]+'-'+dp[1]+'-'+dp[0]+(partes[1]?' T'+partes[1]:'');
-          var ts = new Date(dataStr).getTime();
-          return ts >= fromTs && ts <= toTs;
-        }).map(function(l) {
-          // Converter formato Firebase para formato compatível com o sistema
-          return {
-            id: l.id,
-            _firebase: true,
-            attributes: {
-              created_at: l.criado_em,
-              updated_at: l.atualizado_em,
-              lead_status: { alias: '', name: l.status_c2s||'' },
-              customer: { name: l.cliente_nome||'', email: l.cliente_email||'', phone: l.cliente_telefone||'' },
-              seller: { name: l.corretor||'', company: l.equipe||'' },
-              company: { name: l.equipe||'' },
-              lead_source: { name: l.fonte||'' },
-              channel: { name: l.canal||'' },
-              product: {
-                description: l.imovel_titulo||'',
-                prop_ref: l.imovel_ref||'',
-                price_float: l.preco||0,
-                neighbourhood: l.bairro||'',
-                city: l.cidade||'',
-                real_estate_detail: { negotiation_name: l.natureza||'' }
-              }
-            },
-            _classificacao: l.classificacao,
-            _observacoes_firebase: l.observacoes||''
-          };
-        });
-
+        todosLeads = data || [];
         document.getElementById('ldgBar').style.width = '90%';
         document.getElementById('ldgTxt').textContent = todosLeads.length.toLocaleString('pt-BR')+' leads encontrados';
         finalizarCarregamento(btn);
       })
       .catch(function(e){
-        document.getElementById('ldgTxt').textContent = 'Erro Firebase: '+e.message;
+        document.getElementById('ldgTxt').textContent = 'Erro: '+e.message;
         btn.disabled=false;
       });
   }
