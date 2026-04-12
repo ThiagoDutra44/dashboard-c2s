@@ -822,8 +822,13 @@ function renderizarTabela() {
       '<td style="width:4px;padding:0;background:'+(aguardSync?'var(--orange)':'transparent')+';"></td>'+
       '<td class="td-num">'+(i+1)+'</td>'+
       '<td class="td-hora" style="white-space:nowrap;">'+hora+'</td>'+
-      '<td><div class="td-cliente-nome">'+esc(nome)+'</div>'+
-           '<div class="td-cliente-tel">'+esc(tel)+'</div>'+
+      '<td>'+
+        '<div class="td-cliente-nome">'+esc(nome)+'</div>'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:2px;">'+
+          '<span class="td-cliente-tel">'+esc(tel)+'</span>'+
+          (tel ? '<a href="https://wa.me/55'+tel.replace(/[^0-9]/g,"")+'" target="_blank" style="font-size:16px;text-decoration:none;line-height:1;" title="WhatsApp">📱</a>' : '')+
+          (a.customer&&a.customer.email ? '<a href="mailto:'+a.customer.email+'" style="font-size:16px;text-decoration:none;line-height:1;" title="Enviar e-mail">📧</a>' : '')+
+        '</div>'+
            (tipo?'<div class="td-tipo">'+esc(tipo)+'</div>':'')+'</td>'+
       '<td class="td-imovel" title="'+esc(imovel)+'">'+esc(imovel)+'</td>'+
       '<td class="td-fonte">'+
