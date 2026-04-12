@@ -715,9 +715,13 @@ function carregarLeads() {
 
   // Verificar se é período recente (hoje ou ontem) ou histórico
   var hoje = new Date();
+  var fromDateObj = new Date(fromDate);
   var toDateObj = new Date(toDate);
-  var diffDias = Math.floor((hoje - toDateObj) / (1000*60*60*24));
-  var ehRecente = diffDias <= 1;
+  var diffPeriodo = Math.floor((toDateObj - fromDateObj) / (1000*60*60*24));
+  var diffHoje = Math.floor((hoje - fromDateObj) / (1000*60*60*24));
+  // Usa API só se for apenas hoje ou ontem (período curto e recente)
+  // Para qualquer período maior ou mais antigo, usa Firebase
+  var ehRecente = diffPeriodo <= 1 && diffHoje <= 1;
 
   if (ehRecente) {
     // Buscar da API do C2S (dados frescos)
