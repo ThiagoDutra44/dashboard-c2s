@@ -430,10 +430,9 @@ function limparDados() {
 }
 
 function getLeadKey(l) {
-  // Usa internal_id numérico quando disponível (consistente com Excel/Firebase)
-  // Caso contrário usa o id hash da API
-  if (l && l.internal_id) return String(l.internal_id);
+  // Usa o hash id da API como chave — é exatamente o que está salvo no Firebase
   if (l && l.id) return String(l.id);
+  if (l && l.internal_id) return String(l.internal_id);
   return null;
 }
 
