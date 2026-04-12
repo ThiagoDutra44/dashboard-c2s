@@ -208,6 +208,13 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;" id="resumoGrid"></div>
   </div>
 
+  <div style="display:none;padding:8px 24px;background:var(--bg2);border-bottom:1px solid var(--border);justify-content:space-between;align-items:center;" id="paginacaoWrap">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--text2);" id="paginacaoInfo">—</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" onclick="mudarPagina(-1)" id="btnPrev" style="padding:4px 12px;font-size:11px;">◀ Anterior</button>
+      <button class="btn" onclick="mudarPagina(1)" id="btnNext" style="padding:4px 12px;font-size:11px;">Próxima ▶</button>
+    </div>
+  </div>
   <div class="table-wrap" id="tableWrap" style="display:none;">
     <table class="leads-table">
       <thead>
@@ -247,6 +254,8 @@ var USUARIOS = {
 };
 var usuarioAtual = null;
 var todosLeads = [];
+var paginaAtual = 1;
+var leadsPorPagina = 50;
 var registros = {};
 var saveTimer = null;
 
@@ -513,7 +522,19 @@ function fmtValor(v) {
 
 function fmtHora(d) {
   if (!d) return '—';
-  var dt = new Date(d);
+  var dt;
+  // Verificar se já está no formato brasileiro dd/mm/yyyy
+  if (d.indexOf('/') > -1) {
+    var partes = d.split(' ');
+    var dp = partes[0].split('/');
+    if (dp.length === 3) {
+      var iso = dp[2]+'-'+dp[1]+'-'+dp[0]+(partes[1]?'T'+partes[1]:'');
+      dt = new Date(iso);
+    } else { dt = new Date(d); }
+  } else {
+    dt = new Date(d);
+  }
+  if (isNaN(dt.getTime())) return d;
   var data = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
   var hora = dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   return data + '<br><span style="font-size:10px;color:var(--text3);">' + hora + '</span>';
@@ -568,6 +589,14 @@ function atualizarContadores() {
   document.getElementById('cTotal').textContent = leads.length;
 }
 
+function mudarPagina(dir) {
+  var leads = leadsFiltrados();
+  var totalPags = Math.ceil(leads.length / leadsPorPagina);
+  paginaAtual = Math.max(1, Math.min(paginaAtual + dir, totalPags));
+  renderizarTabela();
+  document.getElementById('tableWrap').scrollIntoView({behavior:'smooth'});
+}
+
 function atualizarResumo(c, total) {
   var wrap = document.getElementById('resumoWrap');
   var grid = document.getElementById('resumoGrid');
@@ -608,6 +637,8 @@ function filtrarPorStatus(status) {
   document.getElementById('tableWrap').scrollIntoView({behavior:'smooth'});
 }
 
+function resetPagina() { paginaAtual = 1; }
+
 function renderizarTabela() {
   var leads = leadsFiltrados();
   var tbody = document.getElementById('leadsBody');
@@ -621,7 +652,21 @@ function renderizarTabela() {
   }
   empty.style.display = 'none';
 
-  tbody.innerHTML = leads.map(function(l, i) {
+  var totalPags = Math.ceil(leads.length / leadsPorPagina);
+  if (paginaAtual > totalPags) paginaAtual = 1;
+  var inicio = (paginaAtual - 1) * leadsPorPagina;
+  var leadsPagina = leads.slice(inicio, inicio + leadsPorPagina);
+
+  // Update pagination controls
+  var pWrap = document.getElementById('paginacaoWrap');
+  if (pWrap) {
+    pWrap.style.display = leads.length > leadsPorPagina ? 'flex' : 'none';
+    document.getElementById('paginacaoInfo').textContent = 'Página '+paginaAtual+' de '+totalPags+' · '+leads.length.toLocaleString('pt-BR')+' leads';
+    document.getElementById('btnPrev').disabled = paginaAtual <= 1;
+    document.getElementById('btnNext').disabled = paginaAtual >= totalPags;
+  }
+
+  tbody.innerHTML = leadsPagina.map(function(l, i) {
     var a = l.attributes||{};
     var r = getReg(l.id);
     var nome = a.customer?a.customer.name:'—';
@@ -809,6 +854,7 @@ function carregarLeads() {
     setTimeout(function(){
       document.getElementById('ldgScreen').style.display = 'none';
       document.getElementById('tableWrap').style.display = 'block';
+      document.getElementById('paginacaoWrap').style.display = 'flex';
       document.getElementById('resumoWrap').style.display = 'block';
       document.getElementById('counters').style.display = 'flex';
       document.getElementById('lastUpdate').textContent = new Date().toLocaleString('pt-BR');
