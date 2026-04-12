@@ -706,46 +706,122 @@ function carregarLeads() {
   document.getElementById('counters').style.display = 'none';
   document.getElementById('ldgScreen').style.display = 'flex';
 
-  var from = document.getElementById('dateFrom').value;
-  var to = document.getElementById('dateTo').value;
-  if (!from || !to) { document.getElementById('ldgTxt').textContent='Selecione o período'; btn.disabled=false; return; }
+  var fromDate = document.getElementById('dateFrom').value;
+  var toDate = document.getElementById('dateTo').value;
+  if (!fromDate || !toDate) { document.getElementById('ldgTxt').textContent='Selecione o período'; btn.disabled=false; return; }
 
-  var from = from+'T00:00:00Z';
-  var to = to+'T23:59:59Z';
   todosLeads = [];
-
   document.getElementById('ldgBar').style.width = '5%';
-  document.getElementById('ldgTxt').textContent = 'CONECTANDO...';
 
-  function pagina(p) {
-    return fetch(PROXY+'/leads?page='+p+'&perpage=50&created_gte='+from+'&created_lt='+to)
-      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(function(j) {
-        if (!j.data||!j.data.length) return;
-        todosLeads = todosLeads.concat(j.data);
-        var tot = j.meta&&j.meta.total?j.meta.total:todosLeads.length;
-        var u = usuarioAtual ? USUARIOS[usuarioAtual] : null;
-        var filtrados = todosLeads.filter(function(l) {
-          var a = l.attributes||{};
-          if (u && u.filtro) {
-            if (u.filtro.tipo === 'corretor' && (a.seller?a.seller.name:'') !== u.filtro.valor) return false;
-            if (u.filtro.tipo === 'empresa' && (a.company?a.company.name:'') !== u.filtro.valor) return false;
+  // Verificar se é período recente (hoje ou ontem) ou histórico
+  var hoje = new Date();
+  var toDateObj = new Date(toDate);
+  var diffDias = Math.floor((hoje - toDateObj) / (1000*60*60*24));
+  var ehRecente = diffDias <= 1;
+
+  if (ehRecente) {
+    // Buscar da API do C2S (dados frescos)
+    document.getElementById('ldgTxt').textContent = 'BUSCANDO DA API C2S...';
+    var from = fromDate+'T00:00:00Z';
+    var to = toDate+'T23:59:59Z';
+
+    function pagina(p) {
+      return fetch(PROXY+'/leads?page='+p+'&perpage=50&created_gte='+from+'&created_lt='+to)
+        .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(function(j) {
+          if (!j.data||!j.data.length) return;
+          todosLeads = todosLeads.concat(j.data);
+          var tot = j.meta&&j.meta.total?j.meta.total:todosLeads.length;
+          var u2 = usuarioAtual ? USUARIOS[usuarioAtual] : null;
+          var filtrados = todosLeads.filter(function(l) {
+            var a = l.attributes||{};
+            if (u2 && u2.filtro) {
+              if (u2.filtro.tipo === 'corretor' && (a.seller?a.seller.name:'') !== u2.filtro.valor) return false;
+              if (u2.filtro.tipo === 'empresa' && (a.company?a.company.name:'') !== u2.filtro.valor) return false;
+            }
+            return true;
+          });
+          document.getElementById('ldgBar').style.width = Math.min(90,Math.round(todosLeads.length/Math.max(tot,1)*80)+10)+'%';
+          if (u2 && u2.filtro) {
+            document.getElementById('ldgTxt').textContent = 'CARREGANDO... '+filtrados.length+' leads';
+          } else {
+            document.getElementById('ldgTxt').textContent = 'CARREGANDO... '+todosLeads.length+' / '+tot+' leads';
           }
-          return true;
+          if (todosLeads.length>=tot||j.data.length<50) return;
+          return new Promise(function(res){ setTimeout(function(){ res(pagina(p+1)); },2000); });
         });
-        document.getElementById('ldgBar').style.width = Math.min(90,Math.round(todosLeads.length/Math.max(tot,1)*80)+10)+'%';
-        var u2 = usuarioAtual ? USUARIOS[usuarioAtual] : null;
-        if (u2 && u2.filtro) {
-          document.getElementById('ldgTxt').textContent = 'CARREGANDO... '+filtrados.length+' leads';
-        } else {
-          document.getElementById('ldgTxt').textContent = 'CARREGANDO... '+todosLeads.length+' / '+tot+' leads';
-        }
-        if (todosLeads.length>=tot||j.data.length<50) return;
-        return new Promise(function(res){ setTimeout(function(){ res(pagina(p+1)); },2000); });
+    }
+
+    pagina(1).then(function() { finalizarCarregamento(btn); })
+    .catch(function(e){
+      document.getElementById('ldgTxt').textContent = 'Erro: '+e.message;
+      btn.disabled=false;
+    });
+
+  } else {
+    // Buscar do Firebase (histórico) — instantâneo!
+    document.getElementById('ldgTxt').textContent = 'BUSCANDO DO FIREBASE...';
+    var fromTs = new Date(fromDate+'T00:00:00').getTime();
+    var toTs = new Date(toDate+'T23:59:59').getTime();
+
+    fetch(FIREBASE+'/leads.json')
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        if (!data) { finalizarCarregamento(btn); return; }
+        var leadsFirebase = Object.values(data);
+        document.getElementById('ldgBar').style.width = '50%';
+        document.getElementById('ldgTxt').textContent = 'FILTRANDO '+leadsFirebase.length.toLocaleString('pt-BR')+' registros...';
+
+        // Filtrar por período e converter para formato compatível
+        todosLeads = leadsFirebase.filter(function(l) {
+          if (!l.criado_em) return false;
+          // Parse da data no formato dd/mm/yyyy hh:mm:ss
+          var partes = l.criado_em.split(' ');
+          if (!partes[0]) return false;
+          var dp = partes[0].split('/');
+          if (dp.length !== 3) return false;
+          var dataStr = dp[2]+'-'+dp[1]+'-'+dp[0]+(partes[1]?' T'+partes[1]:'');
+          var ts = new Date(dataStr).getTime();
+          return ts >= fromTs && ts <= toTs;
+        }).map(function(l) {
+          // Converter formato Firebase para formato compatível com o sistema
+          return {
+            id: l.id,
+            _firebase: true,
+            attributes: {
+              created_at: l.criado_em,
+              updated_at: l.atualizado_em,
+              lead_status: { alias: '', name: l.status_c2s||'' },
+              customer: { name: l.cliente_nome||'', email: l.cliente_email||'', phone: l.cliente_telefone||'' },
+              seller: { name: l.corretor||'', company: l.equipe||'' },
+              company: { name: l.equipe||'' },
+              lead_source: { name: l.fonte||'' },
+              channel: { name: l.canal||'' },
+              product: {
+                description: l.imovel_titulo||'',
+                prop_ref: l.imovel_ref||'',
+                price_float: l.preco||0,
+                neighbourhood: l.bairro||'',
+                city: l.cidade||'',
+                real_estate_detail: { negotiation_name: l.natureza||'' }
+              }
+            },
+            _classificacao: l.classificacao,
+            _observacoes_firebase: l.observacoes||''
+          };
+        });
+
+        document.getElementById('ldgBar').style.width = '90%';
+        document.getElementById('ldgTxt').textContent = todosLeads.length.toLocaleString('pt-BR')+' leads encontrados';
+        finalizarCarregamento(btn);
+      })
+      .catch(function(e){
+        document.getElementById('ldgTxt').textContent = 'Erro Firebase: '+e.message;
+        btn.disabled=false;
       });
   }
 
-  pagina(1).then(function() {
+  function finalizarCarregamento(btn) {
     todosLeads.sort(function(a,b){
       var da=a.attributes&&a.attributes.created_at?new Date(a.attributes.created_at):0;
       var db=b.attributes&&b.attributes.created_at?new Date(b.attributes.created_at):0;
@@ -781,11 +857,7 @@ function carregarLeads() {
       btn.disabled = false;
       renderizarTabela();
     },300);
-
-  }).catch(function(e){
-    document.getElementById('ldgTxt').textContent = 'Erro: '+e.message;
-    btn.disabled=false;
-  });
+  }
 }
 
 var hoje = new Date().toISOString().split('T')[0];
