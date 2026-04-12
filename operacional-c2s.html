@@ -211,8 +211,10 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   <div style="display:none;padding:8px 24px;background:var(--bg2);border-bottom:1px solid var(--border);justify-content:space-between;align-items:center;" id="paginacaoWrap">
     <div style="font-family:var(--mono);font-size:11px;color:var(--text2);" id="paginacaoInfo">—</div>
     <div style="display:flex;gap:8px;">
+      <button class="btn" onclick="irParaPagina(1)" id="btnFirst" style="padding:4px 12px;font-size:11px;">|◀ Primeira</button>
       <button class="btn" onclick="mudarPagina(-1)" id="btnPrev" style="padding:4px 12px;font-size:11px;">◀ Anterior</button>
       <button class="btn" onclick="mudarPagina(1)" id="btnNext" style="padding:4px 12px;font-size:11px;">Próxima ▶</button>
+      <button class="btn" onclick="irParaUltima()" id="btnLast" style="padding:4px 12px;font-size:11px;">Última ▶|</button>
     </div>
   </div>
   <div class="table-wrap" id="tableWrap" style="display:none;">
@@ -597,6 +599,19 @@ function mudarPagina(dir) {
   document.getElementById('tableWrap').scrollIntoView({behavior:'smooth'});
 }
 
+function irParaPagina(p) {
+  paginaAtual = p;
+  renderizarTabela();
+  document.getElementById('tableWrap').scrollIntoView({behavior:'smooth'});
+}
+
+function irParaUltima() {
+  var leads = leadsFiltrados();
+  paginaAtual = Math.ceil(leads.length / leadsPorPagina);
+  renderizarTabela();
+  document.getElementById('tableWrap').scrollIntoView({behavior:'smooth'});
+}
+
 function atualizarResumo(c, total) {
   var wrap = document.getElementById('resumoWrap');
   var grid = document.getElementById('resumoGrid');
@@ -662,8 +677,10 @@ function renderizarTabela() {
   if (pWrap) {
     pWrap.style.display = leads.length > leadsPorPagina ? 'flex' : 'none';
     document.getElementById('paginacaoInfo').textContent = 'Página '+paginaAtual+' de '+totalPags+' · '+leads.length.toLocaleString('pt-BR')+' leads';
+    document.getElementById('btnFirst').disabled = paginaAtual <= 1;
     document.getElementById('btnPrev').disabled = paginaAtual <= 1;
     document.getElementById('btnNext').disabled = paginaAtual >= totalPags;
+    document.getElementById('btnLast').disabled = paginaAtual >= totalPags;
   }
 
   tbody.innerHTML = leadsPagina.map(function(l, i) {
