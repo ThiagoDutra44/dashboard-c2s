@@ -70,10 +70,12 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .td-cliente-nome{font-weight:600;color:var(--text);}
 .td-cliente-tel{font-size:11px;color:var(--text2);margin-top:2px;font-family:var(--mono);}
 .td-tipo{font-size:10px;letter-spacing:1px;color:var(--text3);margin-top:2px;}
-.td-imovel{color:var(--text2);font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.td-fonte{font-size:11px;color:var(--text2);max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.td-corretor{font-size:12px;color:var(--text2);max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.td-imovel{color:var(--text2);font-size:12px;width:180px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.td-fonte{font-size:11px;color:var(--text2);width:90px;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.td-corretor{font-size:12px;color:var(--text2);width:110px;max-width:110px;}
 .td-valor{font-family:var(--mono);font-size:11px;color:var(--cyan);width:70px;white-space:nowrap;}
+.td-bairro{font-size:11px;color:var(--text2);width:110px;max-width:110px;}
+.leads-table{table-layout:fixed;width:100%;}
 
 .status-select{font-family:var(--font);font-size:11px;font-weight:600;padding:5px 8px;border-radius:3px;border:1px solid;cursor:pointer;outline:none;min-width:170px;transition:all .2s;}
 .s-novo{background:rgba(0,212,255,0.08);border-color:rgba(0,212,255,0.25);color:var(--cyan);}
@@ -176,6 +178,11 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <option value="finalizado">Finalizado</option>
       <option value="repetido">Repetido</option>
     </select>
+    <input type="text" class="finput" id="buscaCliente" placeholder="🔍 Cliente..." style="width:130px" oninput="resetPagina();renderizarTabela();">
+    <input type="text" class="finput" id="buscaBairro" placeholder="🔍 Bairro..." style="width:110px" oninput="resetPagina();renderizarTabela();">
+    <input type="text" class="finput" id="buscaImovel" placeholder="🔍 Imóvel..." style="width:130px" oninput="resetPagina();renderizarTabela();">
+    <input type="number" class="finput" id="valorMin" placeholder="R$ min" style="width:80px" oninput="resetPagina();renderizarTabela();">
+    <input type="number" class="finput" id="valorMax" placeholder="R$ max" style="width:80px" oninput="resetPagina();renderizarTabela();">
     <span class="flbl">Ordem</span>
     <select class="fselect" id="ordemFilter" onchange="resetPagina();renderizarTabela();">
       <option value="asc">Mais antigo primeiro</option>
@@ -604,6 +611,11 @@ function leadsFiltrados() {
   var cf = document.getElementById('corretorFilter').value;
   var sf = document.getElementById('statusFilter').value;
   var ef = document.getElementById('empresaFilter').value;
+  var buscaCliente = (document.getElementById('buscaCliente').value||'').toLowerCase().trim();
+  var buscaBairro = (document.getElementById('buscaBairro').value||'').toLowerCase().trim();
+  var buscaImovel = (document.getElementById('buscaImovel').value||'').toLowerCase().trim();
+  var valorMin = parseFloat(document.getElementById('valorMin').value)||0;
+  var valorMax = parseFloat(document.getElementById('valorMax').value)||0;
   var u = usuarioAtual ? USUARIOS[usuarioAtual] : null;
 
   return todosLeads.filter(function(l) {
@@ -630,6 +642,14 @@ function leadsFiltrados() {
     if (ef && empresa !== ef) return false;
     if (cf && corretor !== cf) return false;
     if (sf && getReg(getLeadKey(l)||l.id).status !== sf) return false;
+    if (buscaCliente && !(a.customer&&a.customer.name||'').toLowerCase().includes(buscaCliente)) return false;
+    if (buscaBairro) {
+      var b = ((a.product&&a.product.neighbourhood)||'').toLowerCase();
+      if (!b.includes(buscaBairro)) return false;
+    }
+    if (buscaImovel && !(a.product&&a.product.description||'').toLowerCase().includes(buscaImovel)) return false;
+    if (valorMin > 0 && (a.product&&a.product.price_float||0) < valorMin) return false;
+    if (valorMax > 0 && (a.product&&a.product.price_float||0) > valorMax) return false;
     return true;
   });
 }
