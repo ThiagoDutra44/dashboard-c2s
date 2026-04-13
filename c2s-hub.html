@@ -359,6 +359,7 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
       <span class="flbl">até</span>
       <input type="date" class="finput" id="biDateTo">
       <button class="btn" id="biBtnLoad" onclick="biIniciarCarga()" style="border-color:var(--cyan2);color:var(--cyan);">▶ Carregar</button>
+      <button class="btn" onclick="biIniciarCarga(true)" style="border-color:var(--orange);color:var(--orange);font-size:10px;" title="Força busca da API mesmo para períodos históricos">⚡ Forçar API</button>
       <button class="btn danger" onclick="biLimparFiltros()" style="margin-left:4px;">✕ Limpar Filtros</button>
     </div>
 
@@ -897,7 +898,7 @@ var BI_TT={backgroundColor:'rgba(4,8,15,0.96)',borderColor:'rgba(0,212,255,0.2)'
 function biSetProgresso(pct,txt){document.getElementById('biLdgBar').style.width=pct+'%';document.getElementById('biLdgTxt').textContent=txt;}
 function biMostrarErro(msg){var el=document.getElementById('biErrBox');el.textContent='⚠ '+msg;el.style.display='block';}
 
-function biIniciarCarga(){
+function biIniciarCarga(forceApi){
   var btn=document.getElementById('biBtnLoad'); btn.disabled=true;
   document.getElementById('biErrBox').style.display='none';
   document.getElementById('biMainArea').style.display='none';
@@ -908,27 +909,50 @@ function biIniciarCarga(){
   if(!de||!ate){biSetProgresso(0,'Selecione o período');btn.disabled=false;return;}
   biTodosLeads=[]; biSetProgresso(5,'CONECTANDO...');
 
-  function carregarPag(p){
-    return fetch(PROXY+'/leads?page='+p+'&perpage=50&created_gte='+de+'T00:00:00Z&created_lt='+ate+'T23:59:59Z')
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-      .then(function(j){
-        if(!j.data||!j.data.length) return biTodosLeads;
-        biTodosLeads=biTodosLeads.concat(j.data);
-        var tot=(j.meta&&j.meta.total)?j.meta.total:biTodosLeads.length;
-        biSetProgresso(Math.min(85,Math.round(biTodosLeads.length/Math.max(tot,1)*75)+10),'CARREGANDO... '+biTodosLeads.length+' / '+tot+' leads');
-        if(biTodosLeads.length>=tot||j.data.length<50) return biTodosLeads;
-        return new Promise(function(res){setTimeout(function(){res(carregarPag(p+1));},5000);});
-      });
-  }
+  // Mesma regra do Operacional: API para últimos 7 dias, Firebase para histórico
+  var hoje=new Date();
+  var fromDateObj=new Date(de);
+  var diffDias=Math.floor((hoje-fromDateObj)/(1000*60*60*24));
+  var ehRecente=forceApi||diffDias<=7;
 
-  carregarPag(1).then(function(leads){
-    if(!leads.length){biSetProgresso(0,'');biMostrarErro('Nenhum lead encontrado.');btn.disabled=false;return;}
+  function biFinalizarCarga(){
+    if(!biTodosLeads.length){biSetProgresso(0,'');biMostrarErro('Nenhum lead encontrado.');btn.disabled=false;return;}
     biSetProgresso(90,'PROCESSANDO...');
     setTimeout(function(){
-      biMontarDashboard(leads,de,ate); biSetProgresso(100,'CONCLUÍDO');
+      biMontarDashboard(biTodosLeads,de,ate); biSetProgresso(100,'CONCLUÍDO');
       setTimeout(function(){document.getElementById('biLdgScreen').style.display='none';document.getElementById('biMainArea').style.display='block';document.getElementById('lastUpdate').textContent=new Date().toLocaleString('pt-BR');btn.disabled=false;},300);
     },200);
-  }).catch(function(e){biSetProgresso(0,'');biMostrarErro('Erro: '+e.message);btn.disabled=false;});
+  }
+
+  if(ehRecente){
+    // Busca da API C2S (dados frescos)
+    biSetProgresso(10,'BUSCANDO DA API C2S...');
+    function carregarPag(p){
+      return fetch(PROXY+'/leads?page='+p+'&perpage=50&created_gte='+de+'T00:00:00Z&created_lt='+ate+'T23:59:59Z')
+        .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+        .then(function(j){
+          if(!j.data||!j.data.length) return biTodosLeads;
+          biTodosLeads=biTodosLeads.concat(j.data);
+          var tot=(j.meta&&j.meta.total)?j.meta.total:biTodosLeads.length;
+          biSetProgresso(Math.min(85,Math.round(biTodosLeads.length/Math.max(tot,1)*75)+10),'CARREGANDO... '+biTodosLeads.length+' / '+tot+' leads');
+          if(biTodosLeads.length>=tot||j.data.length<50) return biTodosLeads;
+          return new Promise(function(res){setTimeout(function(){res(carregarPag(p+1));},5000);});
+        });
+    }
+    carregarPag(1).then(function(){biFinalizarCarga();}).catch(function(e){biSetProgresso(0,'');biMostrarErro('Erro: '+e.message);btn.disabled=false;});
+
+  } else {
+    // Busca do Firebase (histórico)
+    biSetProgresso(10,'BUSCANDO DO FIREBASE...');
+    fetch(PROXY+'/firebase/leads?from='+de+'&to='+ate)
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(function(data){
+        biTodosLeads=data||[];
+        biSetProgresso(85,biTodosLeads.length.toLocaleString('pt-BR')+' leads encontrados');
+        biFinalizarCarga();
+      })
+      .catch(function(e){biSetProgresso(0,'');biMostrarErro('Erro: '+e.message);btn.disabled=false;});
+  }
 }
 
 function biFiltrarLeads(leads){
