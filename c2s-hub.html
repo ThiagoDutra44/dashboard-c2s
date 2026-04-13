@@ -1041,26 +1041,89 @@ function biMontarDashboard(leads,de,ate){
   var equipeTop=biTopN(biContarPor(filtered,function(l){return l.attributes&&l.attributes.company?l.attributes.company.name:null;}),6);
   biBarras('blEquipe',equipeTop,equipeTop[0]?equipeTop[0][1]:1,'equipe');
 
-  // Horário
-  var horasData=new Array(24).fill(0);
-  filtered.forEach(function(l){var d=l.attributes&&l.attributes.created_at;if(d)horasData[new Date(d).getHours()]++;});
-  var maxH=Math.max.apply(null,horasData);
-  if(biGraficos['bcHora'])biGraficos['bcHora'].destroy();
-  biGraficos['bcHora']=new Chart(document.getElementById('bcHora'),{type:'bar',data:{labels:Array.from({length:24},function(_,i){return i%3===0?i+'h':'';}),datasets:[{data:horasData,backgroundColor:horasData.map(function(v){return v===maxH?'#00d4ff':v>maxH*0.65?'rgba(0,153,204,0.7)':'rgba(0,50,80,0.5)';}),borderRadius:2,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:Object.assign({},BI_TT,{callbacks:{title:function(i){return i[0].label+'h';},label:function(i){return ' '+i.raw+' leads';}}})},scales:{x:{ticks:{color:'#3a6a8a',font:{size:9},maxRotation:0},grid:{display:false},border:{display:false}},y:{display:false}}}});
+  // Horário — renderiza depois para não bloquear
+  setTimeout(function(){
+    var horasData=new Array(24).fill(0);
+    filtered.forEach(function(l){var d=l.attributes&&l.attributes.created_at;if(d)horasData[new Date(d).getHours()]++;});
+    var maxH=Math.max.apply(null,horasData);
+    if(biGraficos['bcHora'])biGraficos['bcHora'].destroy();
+    biGraficos['bcHora']=new Chart(document.getElementById('bcHora'),{type:'bar',data:{labels:Array.from({length:24},function(_,i){return i%3===0?i+'h':'';}),datasets:[{data:horasData,backgroundColor:horasData.map(function(v){return v===maxH?'#00d4ff':v>maxH*0.65?'rgba(0,153,204,0.7)':'rgba(0,50,80,0.5)';}),borderRadius:2,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:Object.assign({},BI_TT,{callbacks:{title:function(i){return i[0].label+'h';},label:function(i){return ' '+i.raw+' leads';}}})},scales:{x:{ticks:{color:'#3a6a8a',font:{size:9},maxRotation:0},grid:{display:false},border:{display:false}},y:{display:false}}}});
+  },50);
 
-  // Evolução diária — últimos 15 dias
-  var porDiaObj={};
-  filtered.forEach(function(l){var d=l.attributes&&l.attributes.created_at;if(d){var dt=new Date(d);var iso=dt.toISOString().split('T')[0];var lbl=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});if(!porDiaObj[iso])porDiaObj[iso]={lbl:lbl,v:0};porDiaObj[iso].v++;}});
-  var diaKeys=Object.keys(porDiaObj).sort().slice(-15);
-  var diaLabels=diaKeys.map(function(k){return porDiaObj[k].lbl;});
-  var diaVals=diaKeys.map(function(k){return porDiaObj[k].v;});
-  var diaNomes=diaKeys.map(function(k){var dt=new Date(k+'T12:00:00');return dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'2-digit'});});
-  if(diaVals.length){var maxV=Math.max.apply(null,diaVals);var maxIdx=diaVals.indexOf(maxV);var mediaD=Math.round(diaVals.reduce(function(a,b){return a+b;},0)/diaVals.length*10)/10;document.getElementById('bEvolMedia').textContent=mediaD;document.getElementById('bEvolPico').textContent=maxV;document.getElementById('bEvolDias').textContent=diaVals.length;document.getElementById('bEvolPicoDia').textContent=diaLabels[maxIdx]||'—';}
-  var evolMinW=Math.max(diaKeys.length*38,document.getElementById('bEvolWrap').offsetWidth||600);
-  document.getElementById('bcEvol').style.width=evolMinW+'px';
-  document.getElementById('bEvolWrap').style.width=evolMinW+'px';
-  if(biGraficos['bcEvol'])biGraficos['bcEvol'].destroy();
-  biGraficos['bcEvol']=new Chart(document.getElementById('bcEvol'),{type:'line',data:{labels:diaLabels,datasets:[{data:diaVals,borderColor:'#00d4ff',backgroundColor:function(ctx){var g=ctx.chart.ctx.createLinearGradient(0,0,0,ctx.chart.height);g.addColorStop(0,'rgba(0,212,255,0.15)');g.addColorStop(1,'rgba(0,212,255,0.0)');return g;},borderWidth:2,pointRadius:diaVals.map(function(v){return v===Math.max.apply(null,diaVals)?6:4;}),pointBackgroundColor:diaVals.map(function(v){return v===Math.max.apply(null,diaVals)?'#ff7b2c':'#00d4ff';}),pointBorderColor:diaVals.map(function(v){return v===Math.max.apply(null,diaVals)?'#ff7b2c':'rgba(0,212,255,0.4)';}),pointBorderWidth:2,pointHoverRadius:7,fill:true,tension:0.35}]},options:{responsive:false,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:Object.assign({},BI_TT,{displayColors:false,callbacks:{title:function(items){return diaNomes[items[0].dataIndex]||items[0].label;},label:function(item){return '  '+item.raw+' leads';},afterLabel:function(item){var v=item.raw;var med=diaVals.reduce(function(a,b){return a+b;},0)/diaVals.length;var diff=Math.round((v-med)/med*100);return '  '+(diff>=0?'+':'')+diff+'% vs média';}}})},scales:{x:{ticks:{color:'#3a6a8a',font:{size:10,family:'Share Tech Mono'},maxRotation:45,minRotation:45,autoSkip:diaKeys.length>40,maxTicksLimit:diaKeys.length>40?20:diaKeys.length},grid:{display:false},border:{display:false}},y:{ticks:{color:'#3a6a8a',font:{size:10,family:'Share Tech Mono'},stepSize:1},grid:{color:'rgba(14,42,68,0.8)'},border:{display:false},beginAtZero:true}},animation:{onComplete:function(anim){var chart=anim.chart;var ctx=chart.ctx;var ds=chart.data.datasets[0];var meta=chart.getDatasetMeta(0);ctx.save();ctx.font='bold 11px Share Tech Mono';ctx.textAlign='center';ctx.textBaseline='bottom';meta.data.forEach(function(pt,i){var v=ds.data[i];var isMax=(v===Math.max.apply(null,ds.data));ctx.fillStyle=isMax?'#ff7b2c':'#7ab0d0';ctx.fillText(v,pt.x,pt.y-8);});ctx.restore();}}}});
+  // Evolução diária — renderiza por último para não travar
+  setTimeout(function(){
+    var porDiaObj={};
+    filtered.forEach(function(l){var d=l.attributes&&l.attributes.created_at;if(d){var dt=new Date(d);var iso=dt.toISOString().split('T')[0];var lbl=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});if(!porDiaObj[iso])porDiaObj[iso]={lbl:lbl,v:0};porDiaObj[iso].v++;}});
+    var todosKeys=Object.keys(porDiaObj).sort();
+    var diaKeys=todosKeys.slice(-15); // sempre últimos 15 dias
+    var diaLabels=diaKeys.map(function(k){return porDiaObj[k].lbl;});
+    var diaVals=diaKeys.map(function(k){return porDiaObj[k].v;});
+    var diaNomes=diaKeys.map(function(k){var dt=new Date(k+'T12:00:00');return dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'2-digit'});});
+
+    if(diaVals.length){
+      var maxV=Math.max.apply(null,diaVals);
+      var maxIdx=diaVals.indexOf(maxV);
+      var mediaD=Math.round(diaVals.reduce(function(a,b){return a+b;},0)/diaVals.length*10)/10;
+      document.getElementById('bEvolMedia').textContent=mediaD;
+      document.getElementById('bEvolPico').textContent=maxV;
+      document.getElementById('bEvolDias').textContent=todosKeys.length; // total de dias do período
+      document.getElementById('bEvolPicoDia').textContent=diaLabels[maxIdx]||'—';
+    }
+
+    var evolMinW=Math.max(diaKeys.length*38,document.getElementById('bEvolWrap').offsetWidth||600);
+    document.getElementById('bcEvol').style.width=evolMinW+'px';
+    document.getElementById('bEvolWrap').style.width=evolMinW+'px';
+    if(biGraficos['bcEvol'])biGraficos['bcEvol'].destroy();
+
+    // Com muitos pontos, desativa animação e labels individuais
+    var muitosPontos=diaKeys.length>60;
+    biGraficos['bcEvol']=new Chart(document.getElementById('bcEvol'),{
+      type:'line',
+      data:{labels:diaLabels,datasets:[{
+        data:diaVals,
+        borderColor:'#00d4ff',
+        backgroundColor:'rgba(0,212,255,0.08)',
+        borderWidth:2,
+        pointRadius:muitosPontos?2:diaVals.map(function(v){return v===Math.max.apply(null,diaVals)?6:4;}),
+        pointBackgroundColor:muitosPontos?'#00d4ff':diaVals.map(function(v){return v===Math.max.apply(null,diaVals)?'#ff7b2c':'#00d4ff';}),
+        pointBorderWidth:muitosPontos?0:2,
+        pointHoverRadius:6,
+        fill:true,
+        tension:0.35
+      }]},
+      options:{
+        responsive:false,
+        maintainAspectRatio:false,
+        animation:muitosPontos?false:{duration:400},
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:Object.assign({},BI_TT,{displayColors:false,callbacks:{
+            title:function(items){return diaNomes[items[0].dataIndex]||items[0].label;},
+            label:function(item){return '  '+item.raw+' leads';},
+            afterLabel:function(item){var v=item.raw;var med=diaVals.reduce(function(a,b){return a+b;},0)/diaVals.length;var diff=Math.round((v-med)/med*100);return '  '+(diff>=0?'+':'')+diff+'% vs média';}
+          }})
+        },
+        scales:{
+          x:{ticks:{color:'#3a6a8a',font:{size:10,family:'Share Tech Mono'},maxRotation:45,minRotation:45,autoSkip:true,maxTicksLimit:15},grid:{display:false},border:{display:false}},
+          y:{ticks:{color:'#3a6a8a',font:{size:10,family:'Share Tech Mono'},stepSize:1},grid:{color:'rgba(14,42,68,0.8)'},border:{display:false},beginAtZero:true}
+        },
+        // Labels nos pontos só quando poucos dias
+        animation: muitosPontos ? false : {
+          onComplete:function(anim){
+            var chart=anim.chart; var ctx=chart.ctx;
+            var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
+            ctx.save(); ctx.font='bold 11px Share Tech Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+            meta.data.forEach(function(pt,i){
+              var v=ds.data[i]; var isMax=(v===Math.max.apply(null,ds.data));
+              ctx.fillStyle=isMax?'#ff7b2c':'#7ab0d0'; ctx.fillText(v,pt.x,pt.y-8);
+            });
+            ctx.restore();
+          }
+        }
+      }
+    });
+  },100);
 
   // Bairros
   var porBairro=biContarPor(filtered,function(l){return l.attributes&&l.attributes.product?l.attributes.product.neighbourhood:null;});
