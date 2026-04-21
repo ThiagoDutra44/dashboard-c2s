@@ -440,7 +440,7 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
 
       <div class="section-lbl">Faixa de Preço × Portal</div>
       <div class="card">
-        <div class="ctitle">Distribuição por Faixa de Valor<span style="font-size:9px;color:var(--text3);margin-left:8px;">quantidade de leads por portal</span><span class="ctitle-sep"></span></div>
+        <div class="ctitle">Distribuição por Faixa de Valor<span style="font-size:9px;color:var(--text3);margin-left:8px;">leads de compra por portal</span><span id="faixaSemPreco" style="font-size:9px;color:var(--text3);margin-left:12px;font-family:var(--mono);"></span><span class="ctitle-sep"></span></div>
         <div style="position:relative;height:280px;"><canvas id="bcFaixa"></canvas></div>
       </div>
 
@@ -1387,10 +1387,12 @@ function biMontarDashboard(leads,de,ate){
       return '2M+';
     }
 
-    // Coleta portais que têm pelo menos 1 lead com preço
+    // Coleta portais que têm pelo menos 1 lead de compra/indefinido com preço
     var portaisSet={};
     filtered.forEach(function(l){
       var a=l.attributes||{};
+      var nat=(a.product&&a.product.real_estate_detail?a.product.real_estate_detail.negotiation_name:'').toLowerCase();
+      if(nat==='aluguel'||nat==='locação'||nat==='locacao'||nat==='rent') return;
       var preco=a.product?a.product.price_float:0;
       if(getFaixa(preco)){
         var fonte=(a.lead_source?a.lead_source.name:'Outros').trim();
@@ -1403,13 +1405,16 @@ function biMontarDashboard(leads,de,ate){
       return cb-ca;
     }).slice(0,8);
 
-    // Conta por faixa e portal
+    // Conta por faixa e portal — apenas Compra e Indefinido
     var faixaTot={};
     var faixaData={};
     faixas.forEach(function(f){faixaTot[f]=0;faixaData[f]={};portais.forEach(function(p){faixaData[f][p]=0;});});
 
     filtered.forEach(function(l){
       var a=l.attributes||{};
+      var nat=(a.product&&a.product.real_estate_detail?a.product.real_estate_detail.negotiation_name:'').toLowerCase();
+      // Exclui locação/aluguel
+      if(nat==='aluguel'||nat==='locação'||nat==='locacao'||nat==='rent') return;
       var preco=a.product?a.product.price_float:0;
       var faixa=getFaixa(preco);
       if(!faixa) return;
@@ -1419,7 +1424,10 @@ function biMontarDashboard(leads,de,ate){
     });
 
     var grandTot=faixas.reduce(function(s,f){return s+faixaTot[f];},0);
-    if(grandTot===0) return; // nada a exibir
+    if(grandTot===0) return;
+    var semPreco=filtered.length-grandTot;
+    var notaSP=document.getElementById('faixaSemPreco');
+    if(notaSP) notaSP.textContent=semPreco>0?'· '+semPreco+' sem preço informado':'';
 
     if(biGraficos['bcFaixa']){biGraficos['bcFaixa'].destroy();biGraficos['bcFaixa']=null;}
     var canvas=document.getElementById('bcFaixa');
@@ -1430,7 +1438,7 @@ function biMontarDashboard(leads,de,ate){
       type:'bar',
       data:{
         labels:faixas.map(function(f){
-          var pct=grandTot?Math.round(faixaTot[f]/grandTot*100):0;
+          var pct=grandTot?(faixaTot[f]/grandTot*100).toFixed(1):0;
           return [f, faixaTot[f]+' leads · '+pct+'%'];
         }),
         datasets:portais.map(function(p,i){
@@ -1446,13 +1454,13 @@ function biMontarDashboard(leads,de,ate){
             callbacks:{
               afterTitle:function(items){
                 var f=faixas[items[0].dataIndex];
-                var pct=grandTot?Math.round(faixaTot[f]/grandTot*100):0;
-                return 'Total: '+faixaTot[f]+' leads ('+pct+'% do total)';
+                var pct=grandTot?(faixaTot[f]/grandTot*100).toFixed(1):0;
+                return 'Total: '+faixaTot[f]+' leads ('+pct+'% dos leads com preço)';
               },
               label:function(item){
                 if(item.raw===0) return null;
                 var f=faixas[item.dataIndex];
-                var pct=faixaTot[f]?Math.round(item.raw/faixaTot[f]*100):0;
+                var pct=faixaTot[f]?(item.raw/faixaTot[f]*100).toFixed(1):0;
                 return ' '+item.dataset.label+': '+item.raw+' ('+pct+'% desta faixa)';
               }
             }
