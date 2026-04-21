@@ -1375,13 +1375,8 @@ function biMontarDashboard(leads,de,ate){
   },80);
 
   // ── Faixa de Preço × Portal ──
-  window._biFiltered = filtered;
-  setTimeout(function(){
-    var filtered=window._biFiltered||[];
+  (function(){
     var faixas=['0–500k','500k–1M','1M–2M','2M+'];
-    var portaisSet={};
-    filtered.forEach(function(l){var a=l.attributes||{};var fonte=(a.lead_source?a.lead_source.name:'Outros').trim();portaisSet[fonte]=1;});
-    var portais=Object.keys(portaisSet).sort();
     var CORES_FAIXA=['#0099cc','#ff7b2c','#00aa66','#7a5af8','#cc6600','#1a7a9a','#aa3366','#4a8a3a'];
 
     function getFaixa(preco){
@@ -1392,29 +1387,55 @@ function biMontarDashboard(leads,de,ate){
       return '2M+';
     }
 
-    var data={};
-    faixas.forEach(function(f){data[f]={};portais.forEach(function(p){data[f][p]=0;});});
+    // Coleta portais que têm pelo menos 1 lead com preço
+    var portaisSet={};
     filtered.forEach(function(l){
       var a=l.attributes||{};
       var preco=a.product?a.product.price_float:0;
-      var fonte=(a.lead_source?a.lead_source.name:'Outros').trim();
+      if(getFaixa(preco)){
+        var fonte=(a.lead_source?a.lead_source.name:'Outros').trim();
+        portaisSet[fonte]=1;
+      }
+    });
+    var portais=Object.keys(portaisSet).sort(function(a,b){
+      var ca=0,cb=0;
+      filtered.forEach(function(l){var s=(l.attributes&&l.attributes.lead_source?l.attributes.lead_source.name:'').trim();if(s===a)ca++;if(s===b)cb++;});
+      return cb-ca;
+    }).slice(0,8);
+
+    // Conta por faixa e portal
+    var faixaTot={};
+    var faixaData={};
+    faixas.forEach(function(f){faixaTot[f]=0;faixaData[f]={};portais.forEach(function(p){faixaData[f][p]=0;});});
+
+    filtered.forEach(function(l){
+      var a=l.attributes||{};
+      var preco=a.product?a.product.price_float:0;
       var faixa=getFaixa(preco);
-      if(faixa&&data[faixa]) data[faixa][fonte]=(data[faixa][fonte]||0)+1;
+      if(!faixa) return;
+      var fonte=(a.lead_source?a.lead_source.name:'Outros').trim();
+      faixaTot[faixa]++;
+      if(portais.indexOf(fonte)>=0) faixaData[faixa][fonte]++;
     });
 
+    var grandTot=faixas.reduce(function(s,f){return s+faixaTot[f];},0);
+    if(grandTot===0) return; // nada a exibir
+
     if(biGraficos['bcFaixa']){biGraficos['bcFaixa'].destroy();biGraficos['bcFaixa']=null;}
-    var faixaCanvas=document.getElementById('bcFaixa');
-    faixaCanvas.width=faixaCanvas.offsetWidth||600;
-    faixaCanvas.height=280;
-    biGraficos['bcFaixa']=new Chart(faixaCanvas,{
+    var canvas=document.getElementById('bcFaixa');
+    canvas.width=canvas.offsetWidth||800;
+    canvas.height=280;
+
+    biGraficos['bcFaixa']=new Chart(canvas,{
       type:'bar',
       data:{
         labels:faixas.map(function(f){
-          var tot=data[f].total;
-          var pct=grandTotal?Math.round(tot/grandTotal*100):0;
-          return [f, tot+' leads · '+pct+'% do total'];
+          var pct=grandTot?Math.round(faixaTot[f]/grandTot*100):0;
+          return [f, faixaTot[f]+' leads · '+pct+'%'];
         }),
-        datasets:portais.map(function(p,i){return{label:p,data:faixas.map(function(f){return data[f][p]||0;}),backgroundColor:CORES_FAIXA[i%CORES_FAIXA.length],borderRadius:3,borderWidth:0};})
+        datasets:portais.map(function(p,i){
+          return{label:p,data:faixas.map(function(f){return faixaData[f][p]||0;}),backgroundColor:CORES_FAIXA[i%CORES_FAIXA.length],borderRadius:3,borderWidth:0};
+        })
       },
       options:{
         responsive:true,maintainAspectRatio:false,animation:false,
@@ -1424,16 +1445,14 @@ function biMontarDashboard(leads,de,ate){
             mode:'index',intersect:false,
             callbacks:{
               afterTitle:function(items){
-                var fi=faixas[items[0].dataIndex];
-                var tot=data[fi].total;
-                var pct=grandTotal?Math.round(tot/grandTotal*100):0;
-                return 'Total: '+tot+' leads ('+pct+'% do total)';
+                var f=faixas[items[0].dataIndex];
+                var pct=grandTot?Math.round(faixaTot[f]/grandTot*100):0;
+                return 'Total: '+faixaTot[f]+' leads ('+pct+'% do total)';
               },
               label:function(item){
-                var fi=faixas[item.dataIndex];
-                var tot=data[fi].total;
-                var pct=tot?Math.round(item.raw/tot*100):0;
                 if(item.raw===0) return null;
+                var f=faixas[item.dataIndex];
+                var pct=faixaTot[f]?Math.round(item.raw/faixaTot[f]*100):0;
                 return ' '+item.dataset.label+': '+item.raw+' ('+pct+'% desta faixa)';
               }
             }
@@ -1445,7 +1464,7 @@ function biMontarDashboard(leads,de,ate){
         }
       }
     });
-  },150);
+  })();
 
   // ── Cruzamentos de Atendimento ──
   setTimeout(function(){
