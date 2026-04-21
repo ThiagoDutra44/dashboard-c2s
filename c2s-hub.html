@@ -1401,7 +1401,7 @@ function biMontarDashboard(leads,de,ate){
     });
 
     if(biGraficos['bcFaixa']){biGraficos['bcFaixa'].destroy();biGraficos['bcFaixa']=null;}
-    var faixaParent=document.querySelector('#bcFaixa').parentNode;
+    var faixaParent=document.getElementById('bcFaixa').parentNode;
     faixaParent.innerHTML='<canvas id="bcFaixa"></canvas>';
     biGraficos['bcFaixa']=new Chart(document.getElementById('bcFaixa'),{
       type:'bar',
