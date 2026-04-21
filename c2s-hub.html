@@ -403,7 +403,7 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
       <div class="section-lbl">Métricas Gerais</div>
       <div class="krow">
         <div class="kcard"><div class="klbl">Total de Leads</div><div class="kval" id="bkTotal">—</div><div class="ksub" id="bkPeriod">—</div><div class="kbar"><div class="kbar-fill" id="bkb1" style="width:0%"></div></div></div>
-        <div class="kcard org"><div class="klbl">Em Negociação</div><div class="kval" id="bkNeg">—</div><div class="ksub" id="bkNegPct">—</div><div class="kbar"><div class="kbar-fill" id="bkb2" style="width:0%;background:linear-gradient(90deg,#cc5500,#ff7b2c)"></div></div></div>
+        <div class="kcard org"><div class="klbl">Leads Distribuídos</div><div class="kval" id="bkNeg">—</div><div class="ksub" id="bkNegPct">—</div><div class="kbar"><div class="kbar-fill" id="bkb2" style="width:0%;background:linear-gradient(90deg,#cc5500,#ff7b2c)"></div></div></div>
         <div class="kcard grn"><div class="klbl">Leads Novos</div><div class="kval" id="bkNovo">—</div><div class="ksub" id="bkNovoPct">—</div><div class="kbar"><div class="kbar-fill" id="bkb3" style="width:0%;background:linear-gradient(90deg,#00aa66,#00ff9d)"></div></div></div>
         <div class="kcard dim"><div class="klbl">Compra</div><div class="kval" id="bkCompra">—</div><div class="ksub" id="bkCompraPct">—</div></div>
         <div class="kcard dim"><div class="klbl">Locação</div><div class="kval" id="bkLocacao">—</div><div class="ksub" id="bkLocacaoPct">—</div></div>
@@ -463,7 +463,12 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
       <!-- Gráfico diário -->
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-          <div class="ctitle" style="margin-bottom:0;">Leads por Dia <span style="font-size:9px;color:var(--text3);letter-spacing:1px;margin-left:6px;">últimos 15 dias</span><span class="ctitle-sep" style="width:40px;flex:none;"></span></div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="ctitle" style="margin-bottom:0;">Leads por Dia<span class="ctitle-sep" style="width:40px;flex:none;"></span></div>
+            <select class="fselect" id="evolPortalFilter" onchange="biRenderEvol()" style="font-size:10px;padding:3px 8px;">
+              <option value="">Todos os portais</option>
+            </select>
+          </div>
           <div style="display:flex;gap:20px;">
             <div style="text-align:center;"><div style="font-family:var(--mono);font-size:16px;color:var(--cyan);" id="bEvolMedia">—</div><div style="font-size:9px;letter-spacing:2px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-top:2px;">Média/dia</div></div>
             <div style="width:1px;height:28px;background:var(--border);"></div>
@@ -910,7 +915,7 @@ function renderizarTabela() {
       '<td class="td-corretor"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span>'+esc(corretor)+'</span><span id="sync_'+leadKey+'" style="display:'+(aguardSync?'inline-flex':'none')+';align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--orange);border:1px solid var(--orange);padding:1px 5px;border-radius:2px;letter-spacing:1px;">🔄 SYNC</span></div>'+((!usuarioData||!usuarioData.filtro_tipo||usuarioData.filtro_tipo==='empresa')?'<div onclick="reatribuir(\''+leadKey+'\',\'https://api.contact2sale.com/webapp/leads\',\''+esc(a.customer?a.customer.name:'')+'\')" style="font-size:9px;color:var(--cyan2);cursor:pointer;margin-top:2px;letter-spacing:1px;">↗ Reatribuir</div>':'')+'</td>'+
       '<td class="td-valor">'+(valorEdit?'<input class="obs-input" style="width:80px;font-family:var(--mono);font-size:11px" placeholder="R$..." value="'+esc(r.valorM||'')+'" onchange="setValorM(\''+leadKey+'\',this.value)" onblur="setValorM(\''+leadKey+'\',this.value)">':valor)+'</td>'+
       '<td style="white-space:nowrap"><select id="sel_'+l.id+'" class="status-select '+sm.cls+'" onchange="setStatus(\''+leadKey+'\',this.value)">'+opts+'</select><span id="hist_'+l.id+'" onclick="verHistorico(\''+leadKey+'\')" title="Ver histórico" style="display:'+(r.historico&&r.historico.length>0?'inline-block':'none')+';margin-left:4px;cursor:pointer;font-size:11px;color:var(--text2);border:1px solid var(--border);padding:1px 6px;border-radius:2px;">📋 '+(r.historico?r.historico.length:0)+'</span></td>'+
-      '<td><div onclick="obsModalAbrir(\''+leadKey+'\',\''+l.id+'\')" style="cursor:pointer;padding:3px 4px;border-bottom:1px solid var(--border);min-height:22px;font-size:12px;color:'+(r.obs?'var(--text)':'var(--text3)')+';font-style:'+(r.obs?'normal':'italic')+';width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="Clique para editar">'+(r.obs||'Observação...')+'</div><div style="font-size:9px;color:var(--text3);text-align:right;font-family:var(--mono)" id="obscnt_'+l.id+'">'+(r.obs?r.obs.length:0)+'/1000</div></td>'+
+      '<td><div onmouseenter="obsShowTooltip(this,event)" onmouseleave="obsHideTooltip()" onclick="obsModalAbrir(\''+leadKey+'\',\''+l.id+'\')" style="cursor:pointer;padding:3px 4px;border-bottom:1px solid var(--border);min-height:22px;font-size:12px;color:'+(r.obs?'var(--text)':'var(--text3)')+';font-style:'+(r.obs?'normal':'italic')+';width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="Clique para editar">'+(r.obs||'Observação...')+'</div><div style="font-size:9px;color:var(--text3);text-align:right;font-family:var(--mono)" id="obscnt_'+l.id+'">'+(r.obs?r.obs.length:0)+'/1000</div></td>'+
       '<td><div id="visita_'+l.id+'" style="display:'+(r.status==='visita'||r.status==='revisita'?'flex':'none')+';flex-direction:column;gap:4px;"><input class="prox-input" type="date" value="'+esc(r.dataVisita||'')+'" style="width:120px" onchange="setDataVisita(\''+leadKey+'\',this.value)"><div style="display:flex;align-items:center;gap:6px;"><input class="prox-input" type="time" value="'+esc(r.hora||'09:00')+'" style="width:80px" onchange="setHora(\''+leadKey+'\',this.value)"><a id="gcal_'+l.id+'" href="#" target="_blank" style="font-size:10px;color:var(--cyan);border:1px solid rgba(0,212,255,0.3);padding:2px 8px;border-radius:2px;text-decoration:none;white-space:nowrap" onclick="atualizarBotaoOutlook(\''+leadKey+'\');">📅 Outlook</a></div></div>'+(r.status!=='visita'&&r.status!=='revisita'?'<span style="font-size:11px;color:var(--text3);">—</span>':'')+'</td>'+
     '</tr>';
   }).join('');
@@ -1068,6 +1073,70 @@ function biAplicarFiltroSelect(){
   if(biTodosLeads.length>0) biMontarDashboard(biTodosLeads,document.getElementById('biDateFrom').value,document.getElementById('biDateTo').value);
 }
 
+function biRenderEvol(){
+  var src=window._biEvolLeads||[];
+  var portalFiltro=document.getElementById('evolPortalFilter')?document.getElementById('evolPortalFilter').value.trim():'';
+  var leadsEvol=portalFiltro?src.filter(function(l){var a=l.attributes||{};return (a.lead_source?a.lead_source.name:'').trim()===portalFiltro;}):src;
+
+  var porDiaObj={};
+  leadsEvol.forEach(function(l){var d=l.attributes&&l.attributes.created_at;if(d){var dt=new Date(d);if(isNaN(dt.getTime()))return;var iso=dt.toISOString().split('T')[0];var lbl=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});if(!porDiaObj[iso])porDiaObj[iso]={lbl:lbl,v:0};porDiaObj[iso].v++;}});
+  var todosKeys=Object.keys(porDiaObj).sort();
+  var diaKeys=todosKeys;
+  var diaLabels=diaKeys.map(function(k){return porDiaObj[k].lbl;});
+  var diaVals=diaKeys.map(function(k){return porDiaObj[k].v;});
+  var diaNomes=diaKeys.map(function(k){var dt=new Date(k+'T12:00:00');return dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'2-digit'});});
+
+  if(diaVals.length){
+    var maxV=Math.max.apply(null,diaVals);
+    var maxIdx=diaVals.indexOf(maxV);
+    var mediaD=Math.round(diaVals.reduce(function(a,b){return a+b;},0)/diaVals.length*10)/10;
+    document.getElementById('bEvolMedia').textContent=mediaD;
+    document.getElementById('bEvolPico').textContent=maxV;
+    document.getElementById('bEvolDias').textContent=todosKeys.length;
+    document.getElementById('bEvolPicoDia').textContent=diaLabels[maxIdx]||'—';
+  }
+
+  var muitosPontos=diaKeys.length>60;
+  var evolMinW=Math.max(diaKeys.length*(muitosPontos?24:38),document.getElementById('bEvolWrap').offsetWidth||600);
+  document.getElementById('bcEvol').style.width=evolMinW+'px';
+  document.getElementById('bEvolWrap').style.width=evolMinW+'px';
+  if(biGraficos['bcEvol'])biGraficos['bcEvol'].destroy();
+
+  biGraficos['bcEvol']=new Chart(document.getElementById('bcEvol'),{
+    type:'line',
+    data:{labels:diaLabels,datasets:[{
+      data:diaVals,
+      borderColor:'#00d4ff',
+      backgroundColor:'rgba(0,212,255,0.08)',
+      borderWidth:muitosPontos?1.5:2,
+      pointRadius:muitosPontos?1:diaVals.map(function(v){return v===Math.max.apply(null,diaVals)?6:3;}),
+      pointBackgroundColor:muitosPontos?'#00d4ff':diaVals.map(function(v){return v===Math.max.apply(null,diaVals)?'#ff7b2c':'#00d4ff';}),
+      pointBorderWidth:0,
+      pointHoverRadius:5,
+      fill:true,
+      tension:0.3
+    }]},
+    options:{
+      responsive:false,
+      maintainAspectRatio:false,
+      animation:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:Object.assign({},BI_TT,{displayColors:false,callbacks:{
+          title:function(items){return diaNomes[items[0].dataIndex]||items[0].label;},
+          label:function(item){return '  '+item.raw+' leads'+(portalFiltro?' ('+portalFiltro+')':'');},
+          afterLabel:function(item){if(!diaVals.length)return '';var med=diaVals.reduce(function(a,b){return a+b;},0)/diaVals.length;var diff=Math.round((item.raw-med)/med*100);return '  '+(diff>=0?'+':'')+diff+'% vs média';}
+        }})
+      },
+      scales:{
+        x:{ticks:{color:'#3a6a8a',font:{size:muitosPontos?8:10,family:'Share Tech Mono'},maxRotation:45,minRotation:45,autoSkip:true,maxTicksLimit:muitosPontos?20:15},grid:{display:false},border:{display:false}},
+        y:{ticks:{color:'#3a6a8a',font:{size:10,family:'Share Tech Mono'},stepSize:1},grid:{color:'rgba(14,42,68,0.8)'},border:{display:false},beginAtZero:true}
+      }
+    }
+  });
+}
+
 function biFiltrarLeads(leads){
   var efVal=document.getElementById('biEquipeFilter')?document.getElementById('biEquipeFilter').value.trim():'';
   var cfVal=document.getElementById('biCorretorFilter')?document.getElementById('biCorretorFilter').value.trim():'';
@@ -1141,8 +1210,9 @@ function biMontarDashboard(leads,de,ate){
   biDonut('bcCanal',canalTop.map(function(e){return e[0];}),canalTop.map(function(e){return e[1];}),BI_CORES);
   biLegenda('blCanal',canalTop.map(function(e){return e[0];}),canalTop.map(function(e){return e[1];}),BI_CORES,'canal');
 
-  var fonteTop=biTopN(biContarPor(filtered,function(l){return l.attributes&&l.attributes.lead_source?l.attributes.lead_source.name:null;}),7);
-  biBarras('blFonte',fonteTop,fonteTop[0]?fonteTop[0][1]:1,'fonte');
+  var fonteTop=biTopN(biContarPor(filtered,function(l){return l.attributes&&l.attributes.lead_source?l.attributes.lead_source.name:null;}),10);
+  var fonteTotal=fonteTop.reduce(function(s,e){return s+e[1];},0);
+  document.getElementById('blFonte').innerHTML=fonteTop.map(function(e,i){var cor=i===0?'linear-gradient(90deg,#0099cc,#00d4ff)':i===1?'linear-gradient(90deg,#006699,#0099cc)':'#0a2a4a';var pct=fonteTotal?Math.round(e[1]/fonteTotal*100):0;var sel=biFiltros['fonte']===e[0]?' selected':'';return '<div class="hbitem'+sel+'" onclick="biAplicarFiltro(\'fonte\',\''+e[0].replace(/'/g,"\\'")+'\')"><div class="hbtop"><span class="hbname">'+e[0]+'</span><span style="display:flex;gap:6px;align-items:center;"><span style="font-size:9px;color:var(--text3);font-family:var(--mono);">'+pct+'%</span><span class="hbval">'+e[1]+'</span></span></div><div class="hbtrack"><div class="hbfill" style="width:'+Math.round(e[1]/(fonteTop[0]?fonteTop[0][1]:1)*100)+'%;background:'+cor+'"></div></div></div>';}).join('');
 
   var corretorTop=biTopN(biContarPor(filtered,function(l){return l.attributes&&l.attributes.seller?l.attributes.seller.name:null;}),6);
   biBarras('blCorretor',corretorTop,corretorTop[0]?corretorTop[0][1]:1,'corretor');
@@ -1169,80 +1239,18 @@ function biMontarDashboard(leads,de,ate){
     biGraficos['bcHora']=new Chart(document.getElementById('bcHora'),{type:'bar',data:{labels:Array.from({length:24},function(_,i){return i%3===0?i+'h':'';}),datasets:[{data:horasData,backgroundColor:horasData.map(function(v){return v===maxH?'#00d4ff':v>maxH*0.65?'rgba(0,153,204,0.7)':'rgba(0,50,80,0.5)';}),borderRadius:2,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:Object.assign({},BI_TT,{callbacks:{title:function(i){return i[0].label+'h';},label:function(i){return ' '+i.raw+' leads';}}})},scales:{x:{ticks:{color:'#3a6a8a',font:{size:9},maxRotation:0},grid:{display:false},border:{display:false}},y:{display:false}}}});
   },50);
 
-  // Evolução diária — renderiza por último para não travar
-  setTimeout(function(){
-    var porDiaObj={};
-    filtered.forEach(function(l){var d=l.attributes&&l.attributes.created_at;if(d){var dt=new Date(d);var iso=dt.toISOString().split('T')[0];var lbl=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});if(!porDiaObj[iso])porDiaObj[iso]={lbl:lbl,v:0};porDiaObj[iso].v++;}});
-    var todosKeys=Object.keys(porDiaObj).sort();
-    var diaKeys=todosKeys; // todos os dias do período
-    var diaLabels=diaKeys.map(function(k){return porDiaObj[k].lbl;});
-    var diaVals=diaKeys.map(function(k){return porDiaObj[k].v;});
-    var diaNomes=diaKeys.map(function(k){var dt=new Date(k+'T12:00:00');return dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'2-digit'});});
+  // Evolução diária — usa função separada para suportar filtro por portal
+  var biEvolLeads=filtered; // guardado para biRenderEvol
+  window._biEvolLeads=filtered;
 
-    if(diaVals.length){
-      var maxV=Math.max.apply(null,diaVals);
-      var maxIdx=diaVals.indexOf(maxV);
-      var mediaD=Math.round(diaVals.reduce(function(a,b){return a+b;},0)/diaVals.length*10)/10;
-      document.getElementById('bEvolMedia').textContent=mediaD;
-      document.getElementById('bEvolPico').textContent=maxV;
-      document.getElementById('bEvolDias').textContent=todosKeys.length; // total de dias do período
-      document.getElementById('bEvolPicoDia').textContent=diaLabels[maxIdx]||'—';
-    }
+  // Popula select de portais no evol
+  var evolPortais={};
+  filtered.forEach(function(l){var a=l.attributes||{};var f=(a.lead_source?a.lead_source.name:'').trim();if(f)evolPortais[f]=1;});
+  var evolSel=document.getElementById('evolPortalFilter');
+  var evolVal=evolSel?evolSel.value:'';
+  if(evolSel){evolSel.innerHTML='<option value="">Todos os portais</option>';Object.keys(evolPortais).sort().forEach(function(p){evolSel.innerHTML+='<option value="'+p+'">'+p+'</option>';});evolSel.value=evolVal;}
 
-    var evolMinW=Math.max(diaKeys.length*38,document.getElementById('bEvolWrap').offsetWidth||600);
-    document.getElementById('bcEvol').style.width=evolMinW+'px';
-    document.getElementById('bEvolWrap').style.width=evolMinW+'px';
-    if(biGraficos['bcEvol'])biGraficos['bcEvol'].destroy();
-
-    // Com muitos pontos, desativa animação e labels individuais
-    var muitosPontos=diaKeys.length>60;
-    biGraficos['bcEvol']=new Chart(document.getElementById('bcEvol'),{
-      type:'line',
-      data:{labels:diaLabels,datasets:[{
-        data:diaVals,
-        borderColor:'#00d4ff',
-        backgroundColor:'rgba(0,212,255,0.08)',
-        borderWidth:2,
-        pointRadius:muitosPontos?2:diaVals.map(function(v){return v===Math.max.apply(null,diaVals)?6:4;}),
-        pointBackgroundColor:muitosPontos?'#00d4ff':diaVals.map(function(v){return v===Math.max.apply(null,diaVals)?'#ff7b2c':'#00d4ff';}),
-        pointBorderWidth:muitosPontos?0:2,
-        pointHoverRadius:6,
-        fill:true,
-        tension:0.35
-      }]},
-      options:{
-        responsive:false,
-        maintainAspectRatio:false,
-        animation:muitosPontos?false:{duration:400},
-        interaction:{mode:'index',intersect:false},
-        plugins:{
-          legend:{display:false},
-          tooltip:Object.assign({},BI_TT,{displayColors:false,callbacks:{
-            title:function(items){return diaNomes[items[0].dataIndex]||items[0].label;},
-            label:function(item){return '  '+item.raw+' leads';},
-            afterLabel:function(item){var v=item.raw;var med=diaVals.reduce(function(a,b){return a+b;},0)/diaVals.length;var diff=Math.round((v-med)/med*100);return '  '+(diff>=0?'+':'')+diff+'% vs média';}
-          }})
-        },
-        scales:{
-          x:{ticks:{color:'#3a6a8a',font:{size:10,family:'Share Tech Mono'},maxRotation:45,minRotation:45,autoSkip:true,maxTicksLimit:15},grid:{display:false},border:{display:false}},
-          y:{ticks:{color:'#3a6a8a',font:{size:10,family:'Share Tech Mono'},stepSize:1},grid:{color:'rgba(14,42,68,0.8)'},border:{display:false},beginAtZero:true}
-        },
-        // Labels nos pontos só quando poucos dias
-        animation: muitosPontos ? false : {
-          onComplete:function(anim){
-            var chart=anim.chart; var ctx=chart.ctx;
-            var ds=chart.data.datasets[0]; var meta=chart.getDatasetMeta(0);
-            ctx.save(); ctx.font='bold 11px Share Tech Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-            meta.data.forEach(function(pt,i){
-              var v=ds.data[i]; var isMax=(v===Math.max.apply(null,ds.data));
-              ctx.fillStyle=isMax?'#ff7b2c':'#7ab0d0'; ctx.fillText(v,pt.x,pt.y-8);
-            });
-            ctx.restore();
-          }
-        }
-      }
-    });
-  },100);
+  setTimeout(function(){biRenderEvol();},100);
 
   // Bairros
   var porBairro=biContarPor(filtered,function(l){return l.attributes&&l.attributes.product?l.attributes.product.neighbourhood:null;});
@@ -1339,13 +1347,10 @@ function biMontarDashboard(leads,de,ate){
     }).join('');
   },80);
 
-  // ── Faixa de Preço × Portal (gráfico de barras empilhadas) ──
+  // ── Faixa de Preço × Portal (barras empilhadas com totais e %) ──
   setTimeout(function(){
     var faixas=['0–500k','500k–1M','1M–2M','2M+'];
-    var portaisSet={};
-    filtered.forEach(function(l){var a=l.attributes||{};var fonte=(a.lead_source?a.lead_source.name:'Outros').trim();portaisSet[fonte]=1;});
-    var portais=Object.keys(portaisSet).sort();
-    var CORES_FAIXA=['#00d4ff','#ff7b2c','#00ff9d','#ffd700','#bf7fff','#ff4f8b','#00bfff','#ff9900'];
+    var CORES_FAIXA=['#00d4ff','#ff7b2c','#00ff9d','#0099cc','#ffd700','#bf7fff','#ff4f8b','#3a8a6a','#cc5500','#005580'];
 
     function getFaixa(preco){
       if(!preco||preco<=0) return null;
@@ -1355,28 +1360,69 @@ function biMontarDashboard(leads,de,ate){
       return '2M+';
     }
 
+    // Conta por portal dentro de cada faixa
+    var portaisSet={};
+    filtered.forEach(function(l){var a=l.attributes||{};var fonte=(a.lead_source?a.lead_source.name:'Outros').trim();if(getFaixa(a.product?a.product.price_float:0))portaisSet[fonte]=1;});
+    var portais=Object.keys(portaisSet).sort(function(a,b){
+      var ta=0,tb=0;
+      filtered.forEach(function(l){var src=(l.attributes&&l.attributes.lead_source?l.attributes.lead_source.name:'').trim();if(src===a)ta++;if(src===b)tb++;});
+      return tb-ta;
+    }).slice(0,8);
+
     var data={};
-    faixas.forEach(function(f){data[f]={};portais.forEach(function(p){data[f][p]=0;});});
+    faixas.forEach(function(f){data[f]={total:0};portais.forEach(function(p){data[f][p]=0;});});
     filtered.forEach(function(l){
       var a=l.attributes||{};
       var preco=a.product?a.product.price_float:0;
       var fonte=(a.lead_source?a.lead_source.name:'Outros').trim();
       var faixa=getFaixa(preco);
-      if(faixa&&data[faixa]) data[faixa][fonte]=(data[faixa][fonte]||0)+1;
+      if(!faixa) return;
+      data[faixa].total++;
+      if(portais.indexOf(fonte)>=0) data[faixa][fonte]=(data[faixa][fonte]||0)+1;
     });
+
+    var grandTotal=faixas.reduce(function(s,f){return s+data[f].total;},0);
 
     if(biGraficos['bcFaixa'])biGraficos['bcFaixa'].destroy();
     biGraficos['bcFaixa']=new Chart(document.getElementById('bcFaixa'),{
       type:'bar',
       data:{
-        labels:faixas,
-        datasets:portais.map(function(p,i){return{label:p,data:faixas.map(function(f){return data[f][p]||0;}),backgroundColor:CORES_FAIXA[i%CORES_FAIXA.length],borderRadius:3,borderWidth:0};})
+        labels:faixas.map(function(f){
+          var tot=data[f].total;
+          var pct=grandTotal?Math.round(tot/grandTotal*100):0;
+          return f+' ('+tot+' · '+pct+'%)';
+        }),
+        datasets:portais.map(function(p,i){return{
+          label:p,
+          data:faixas.map(function(f){return data[f][p]||0;}),
+          backgroundColor:CORES_FAIXA[i%CORES_FAIXA.length],
+          borderRadius:3,borderWidth:0
+        };})
       },
       options:{
         responsive:true,maintainAspectRatio:false,animation:false,
-        plugins:{legend:{display:true,position:'bottom',labels:{color:'#7ab0d0',font:{size:10,family:'Share Tech Mono'},boxWidth:10,padding:12}},tooltip:Object.assign({},BI_TT,{mode:'index',intersect:false})},
+        plugins:{
+          legend:{display:true,position:'bottom',labels:{color:'#7ab0d0',font:{size:10,family:'Share Tech Mono'},boxWidth:10,padding:10}},
+          tooltip:Object.assign({},BI_TT,{
+            mode:'index',intersect:false,
+            callbacks:{
+              afterTitle:function(items){
+                var fi=faixas[items[0].dataIndex];
+                var tot=data[fi].total;
+                var pct=grandTotal?Math.round(tot/grandTotal*100):0;
+                return 'Total: '+tot+' leads ('+pct+'% do total)';
+              },
+              label:function(item){
+                var fi=faixas[item.dataIndex];
+                var tot=data[fi].total;
+                var pct=tot?Math.round(item.raw/tot*100):0;
+                return ' '+item.dataset.label+': '+item.raw+' ('+pct+'% desta faixa)';
+              }
+            }
+          })
+        },
         scales:{
-          x:{stacked:true,ticks:{color:'#3a6a8a',font:{size:11,family:'Share Tech Mono'}},grid:{display:false},border:{display:false}},
+          x:{stacked:true,ticks:{color:'#7ab0d0',font:{size:10,family:'Share Tech Mono'},maxRotation:0},grid:{display:false},border:{display:false}},
           y:{stacked:true,ticks:{color:'#3a6a8a',font:{size:10,family:'Share Tech Mono'}},grid:{color:'rgba(14,42,68,0.8)'},border:{display:false},beginAtZero:true}
         }
       }
@@ -1463,7 +1509,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape') document.ge
 /* ══ OBS TOOLTIP ══ */
 var obsTooltipEl=null;
 function obsShowTooltip(el,e){
-  var val=el.value.trim(); if(!val) return;
+  var val=el.textContent.trim();
+  if(!val||val==='Observação...') return;
   if(!obsTooltipEl){obsTooltipEl=document.createElement('div');obsTooltipEl.className='obs-tooltip';document.body.appendChild(obsTooltipEl);}
   obsTooltipEl.textContent=val; obsTooltipEl.style.display='block'; obsMoveTooltip(e);
 }
