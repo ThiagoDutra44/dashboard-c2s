@@ -1374,8 +1374,10 @@ function biMontarDashboard(leads,de,ate){
     }).join('');
   },80);
 
-  // ── Faixa de Preço × Portal (gráfico de barras empilhadas) ──
+  // ── Faixa de Preço × Portal ──
+  window._biFiltered = filtered;
   setTimeout(function(){
+    var filtered=window._biFiltered||[];
     var faixas=['0–500k','500k–1M','1M–2M','2M+'];
     var portaisSet={};
     filtered.forEach(function(l){var a=l.attributes||{};var fonte=(a.lead_source?a.lead_source.name:'Outros').trim();portaisSet[fonte]=1;});
@@ -1401,9 +1403,10 @@ function biMontarDashboard(leads,de,ate){
     });
 
     if(biGraficos['bcFaixa']){biGraficos['bcFaixa'].destroy();biGraficos['bcFaixa']=null;}
-    var faixaParent=document.getElementById('bcFaixa').parentNode;
-    faixaParent.innerHTML='<canvas id="bcFaixa"></canvas>';
-    biGraficos['bcFaixa']=new Chart(document.getElementById('bcFaixa'),{
+    var faixaCanvas=document.getElementById('bcFaixa');
+    faixaCanvas.width=faixaCanvas.offsetWidth||600;
+    faixaCanvas.height=280;
+    biGraficos['bcFaixa']=new Chart(faixaCanvas,{
       type:'bar',
       data:{
         labels:faixas.map(function(f){
