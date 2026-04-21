@@ -109,6 +109,9 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .obs-input{font-family:var(--font);font-size:12px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);padding:3px 4px;outline:none;width:160px;transition:border-color .2s;}
 .obs-input:focus{border-color:var(--cyan2);}
 .obs-input::placeholder{color:var(--text3);}
+/* OBS TOOLTIP */
+.obs-tooltip{display:none;position:fixed;z-index:9000;background:var(--bg2);border:1px solid var(--cyan2);border-radius:4px;padding:10px 14px;font-family:var(--font);font-size:12px;color:var(--text);max-width:420px;min-width:180px;max-height:60vh;overflow-y:auto;white-space:pre-wrap;word-break:break-word;box-shadow:0 4px 24px rgba(0,0,0,0.6);pointer-events:none;line-height:1.6;}
+.obs-tooltip::before{content:'Observação';display:block;font-size:9px;letter-spacing:2px;color:var(--cyan2);text-transform:uppercase;font-family:var(--mono);margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:4px;}
 .prox-input{font-family:var(--mono);font-size:11px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text2);padding:3px 4px;outline:none;width:110px;transition:border-color .2s;}
 .prox-input:focus{border-color:var(--cyan2);}
 .save-indicator{font-family:var(--mono);font-size:10px;color:var(--green);opacity:0;transition:opacity .3s;letter-spacing:1px;}
@@ -688,7 +691,7 @@ function setDataVisita(id,val){getReg(id).dataVisita=val;salvar();atualizarBotao
 function setBairroM(id,val){getReg(id).bairroM=val;salvar();}
 function setCidadeM(id,val){getReg(id).cidadeM=val;salvar();}
 function setValorM(id,val){getReg(id).valorM=val;salvar();}
-function contarObs(id){var el=document.getElementById('obs_'+id);var cnt=document.getElementById('obscnt_'+id);if(el&&cnt) cnt.textContent=el.value.length+'/500';}
+function contarObs(id){var el=document.getElementById('obs_'+id);var cnt=document.getElementById('obscnt_'+id);if(el&&cnt) cnt.textContent=el.value.length+'/1000';}
 function resetPagina(){paginaAtual=1;}
 
 function reatribuir(leadId,urlC2S,nomeCliente) {
@@ -847,7 +850,7 @@ function renderizarTabela() {
       '<td class="td-corretor"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span>'+esc(corretor)+'</span><span id="sync_'+leadKey+'" style="display:'+(aguardSync?'inline-flex':'none')+';align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--orange);border:1px solid var(--orange);padding:1px 5px;border-radius:2px;letter-spacing:1px;">🔄 SYNC</span></div>'+((!usuarioData||!usuarioData.filtro_tipo||usuarioData.filtro_tipo==='empresa')?'<div onclick="reatribuir(\''+leadKey+'\',\'https://api.contact2sale.com/webapp/leads\',\''+esc(a.customer?a.customer.name:'')+'\')" style="font-size:9px;color:var(--cyan2);cursor:pointer;margin-top:2px;letter-spacing:1px;">↗ Reatribuir</div>':'')+'</td>'+
       '<td class="td-valor">'+(valorEdit?'<input class="obs-input" style="width:80px;font-family:var(--mono);font-size:11px" placeholder="R$..." value="'+esc(r.valorM||'')+'" onchange="setValorM(\''+leadKey+'\',this.value)" onblur="setValorM(\''+leadKey+'\',this.value)">':valor)+'</td>'+
       '<td style="white-space:nowrap"><select id="sel_'+l.id+'" class="status-select '+sm.cls+'" onchange="setStatus(\''+leadKey+'\',this.value)">'+opts+'</select><span id="hist_'+l.id+'" onclick="verHistorico(\''+leadKey+'\')" title="Ver histórico" style="display:'+(r.historico&&r.historico.length>0?'inline-block':'none')+';margin-left:4px;cursor:pointer;font-size:11px;color:var(--text2);border:1px solid var(--border);padding:1px 6px;border-radius:2px;">📋 '+(r.historico?r.historico.length:0)+'</span></td>'+
-      '<td><input class="obs-input" id="obs_'+l.id+'" maxlength="500" placeholder="Observação..." value="'+esc(r.obs)+'" oninput="contarObs(\''+leadKey+'\')" onchange="setObs(\''+leadKey+'\',this.value)" onblur="setObs(\''+leadKey+'\',this.value)"><div style="font-size:9px;color:var(--text3);text-align:right;font-family:var(--mono)" id="obscnt_'+l.id+'">'+(r.obs?r.obs.length:0)+'/500</div></td>'+
+      '<td><input class="obs-input" id="obs_'+l.id+'" maxlength="1000" placeholder="Observação..." value="'+esc(r.obs)+'" oninput="contarObs(\''+leadKey+'\')" onchange="setObs(\''+leadKey+'\',this.value)" onblur="setObs(\''+leadKey+'\',this.value)" onmouseenter="obsShowTooltip(this,event)" onmouseleave="obsHideTooltip()"><div style="font-size:9px;color:var(--text3);text-align:right;font-family:var(--mono)" id="obscnt_'+l.id+'">'+(r.obs?r.obs.length:0)+'/1000</div></td>'+
       '<td><div id="visita_'+l.id+'" style="display:'+(r.status==='visita'||r.status==='revisita'?'flex':'none')+';flex-direction:column;gap:4px;"><input class="prox-input" type="date" value="'+esc(r.dataVisita||'')+'" style="width:120px" onchange="setDataVisita(\''+leadKey+'\',this.value)"><div style="display:flex;align-items:center;gap:6px;"><input class="prox-input" type="time" value="'+esc(r.hora||'09:00')+'" style="width:80px" onchange="setHora(\''+leadKey+'\',this.value)"><a id="gcal_'+l.id+'" href="#" target="_blank" style="font-size:10px;color:var(--cyan);border:1px solid rgba(0,212,255,0.3);padding:2px 8px;border-radius:2px;text-decoration:none;white-space:nowrap" onclick="atualizarBotaoOutlook(\''+leadKey+'\');">📅 Outlook</a></div></div>'+(r.status!=='visita'&&r.status!=='revisita'?'<span style="font-size:11px;color:var(--text3);">—</span>':'')+'</td>'+
     '</tr>';
   }).join('');
@@ -906,7 +909,7 @@ function carregarLeads(forceApi) {
     var ordem=document.getElementById('ordemFilter').value;
     todosLeads.sort(function(a,b){var da=parseDateUniversal(a.attributes&&a.attributes.created_at);var db=parseDateUniversal(b.attributes&&b.attributes.created_at);return ordem==='asc'?da-db:db-da;});
     var corrs={}; var emps={};
-    todosLeads.forEach(function(l){var n=l.attributes&&l.attributes.seller?l.attributes.seller.name:'';var e=l.attributes&&l.attributes.company?l.attributes.company.name:'';if(n)corrs[n]=1;if(e)emps[e]=1;});
+    todosLeads.forEach(function(l){var n=l.attributes&&l.attributes.seller?l.attributes.seller.name.trim():'';var e=l.attributes&&l.attributes.company?l.attributes.company.name.trim():'';if(n)corrs[n]=1;if(e)emps[e]=1;});
     var sel=document.getElementById('corretorFilter'); sel.innerHTML='<option value="">Todos</option>'; Object.keys(corrs).sort().forEach(function(n){sel.innerHTML+='<option value="'+n+'">'+n+'</option>';});
     var empSel=document.getElementById('empresaFilter'); empSel.innerHTML='<option value="">Todas</option>'; Object.keys(emps).sort().forEach(function(e){empSel.innerHTML+='<option value="'+e+'">'+e+'</option>';});
     aplicarFiltroUsuario(); renderizarTabela();
@@ -1183,6 +1186,25 @@ function biMontarDashboard(leads,de,ate){
   filtered.forEach(function(l){var a=l.attributes||{};var corretor=(a.seller&&a.seller.name)||'—';var tipo=(a.product&&a.product.real_estate_detail&&a.product.real_estate_detail.negotiation_name)||'—';if(!crossCorr[corretor])crossCorr[corretor]={total:0,compra:0,locacao:0};crossCorr[corretor].total++;if(tipo==='Compra')crossCorr[corretor].compra++;if(tipo==='Locação'||tipo==='Locacao'||tipo==='Aluguel')crossCorr[corretor].locacao++;});
   document.getElementById('bcrossCorretorBody').innerHTML=Object.entries(crossCorr).sort(function(a,b){return b[1].total-a[1].total;}).slice(0,10).map(function(e,i){return '<tr><td><span class="rank-badge">'+(i+1)+'</span></td><td>'+e[0]+'</td><td class="num">'+e[1].total+'</td><td class="num org">'+e[1].compra+'</td><td class="num grn">'+e[1].locacao+'</td></tr>';}).join('');
 }
+
+/* ══ OBS TOOLTIP ══ */
+var obsTooltipEl=null;
+function obsShowTooltip(el,e){
+  var val=el.value.trim(); if(!val) return;
+  if(!obsTooltipEl){obsTooltipEl=document.createElement('div');obsTooltipEl.className='obs-tooltip';document.body.appendChild(obsTooltipEl);}
+  obsTooltipEl.textContent=val; obsTooltipEl.style.display='block'; obsMoveTooltip(e);
+}
+function obsMoveTooltip(e){
+  if(!obsTooltipEl||obsTooltipEl.style.display==='none') return;
+  var tw=Math.min(420,window.innerWidth-40); var th=obsTooltipEl.offsetHeight||100;
+  var x=e.clientX+16; var y=e.clientY+16;
+  if(x+tw>window.innerWidth-10) x=e.clientX-tw-10;
+  if(y+th>window.innerHeight-10) y=e.clientY-th-10;
+  if(y<10) y=10;
+  obsTooltipEl.style.left=x+'px'; obsTooltipEl.style.top=y+'px';
+}
+function obsHideTooltip(){if(obsTooltipEl) obsTooltipEl.style.display='none';}
+document.addEventListener('mousemove',function(e){obsMoveTooltip(e);});
 
 /* ══ INIT ══ */
 var hoje = new Date().toISOString().split('T')[0];
