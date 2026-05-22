@@ -248,6 +248,7 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
   <div class="tabs" id="tabsWrap" style="display:none;">
     <div class="tab active" id="tabOps" onclick="mudarAba('ops')">▶ Operacional</div>
     <div class="tab" id="tabBI" onclick="mudarAba('bi')">◈ Inteligência · BI</div>
+    <div class="tab" id="tabComissoes" onclick="mudarAba('comissoes')" style="display:none;">💰 Comissões</div>
   </div>
 
   <!-- ══════════════════════
@@ -475,6 +476,8 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
             <div style="text-align:center;"><div style="font-family:var(--mono);font-size:16px;color:var(--green);" id="bEvolDias">—</div><div style="font-size:9px;letter-spacing:2px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-top:2px;">Dias ativos</div></div>
             <div style="width:1px;height:28px;background:var(--border);"></div>
             <div style="text-align:center;"><div style="font-family:var(--mono);font-size:16px;color:var(--purple);" id="bEvolPicoDia">—</div><div style="font-size:9px;letter-spacing:2px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-top:2px;">Melhor dia</div></div>
+            <div style="width:1px;height:28px;background:var(--border);"></div>
+            <div style="text-align:center;"><div style="font-family:var(--mono);font-size:16px;color:#00ff9d;" id="bEvolTotal">—</div><div style="font-size:9px;letter-spacing:2px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-top:2px;">Total período</div></div>
           </div>
         </div>
         <div style="overflow-x:auto;"><div id="bEvolWrap" style="position:relative;height:280px;min-width:100%;"><canvas id="bcEvol"></canvas></div></div>
@@ -488,9 +491,140 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
     </div><!-- /bi-main -->
   </div><!-- /panelBI -->
 
+  <!-- ══════════════════════
+       ABA COMISSÕES
+  ══════════════════════ -->
+  <div class="tab-panel" id="panelComissoes">
+    <div style="padding:16px 20px;">
+
+      <!-- Filtro de mês -->
+      <div class="fbar" style="margin-bottom:20px;">
+        <span class="flbl">Mês</span>
+        <input type="month" class="finput" id="comMes">
+        <button class="btn" onclick="carregarComissoes()" style="border-color:var(--cyan2);color:var(--cyan);">▶ Carregar</button>
+        <span id="comStatusTxt" style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-left:12px;"></span>
+      </div>
+
+      <!-- Ranking + Totalizador -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+
+        <!-- Card caixa único -->
+        <div class="card">
+          <div class="ctitle">📊 Caixa Único — Daiana + Milena Marina<span class="ctitle-sep"></span></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;" id="comKpis">
+            <div style="text-align:center;"><div style="font-size:22px;font-family:var(--mono);color:var(--cyan);" id="comTotalVisitas">—</div><div style="font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;">Visitas</div></div>
+            <div style="text-align:center;"><div style="font-size:22px;font-family:var(--mono);color:var(--orange);" id="comTotalVendas">—</div><div style="font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;">Vendas</div></div>
+            <div style="text-align:center;"><div style="font-size:22px;font-family:var(--mono);color:#00ff9d;" id="comTotalLocacoes">—</div><div style="font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;">Locações</div></div>
+            <div style="text-align:center;"><div style="font-size:22px;font-family:var(--mono);color:#ffd700;" id="comTotalComissao">—</div><div style="font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;">Total R$</div></div>
+          </div>
+          <!-- Barra de progresso da meta -->
+          <div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text3);margin-bottom:4px;">
+              <span>META: 62 visitas</span><span id="comMetaPct">0%</span>
+            </div>
+            <div style="height:6px;background:var(--bg3);border-radius:3px;">
+              <div id="comMetaBar" style="height:100%;background:linear-gradient(90deg,#0099cc,#00d4ff);border-radius:3px;width:0%;transition:width .5s;"></div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);" id="comRegraAtual">—</div>
+        </div>
+
+        <!-- Ranking individual -->
+        <div class="card">
+          <div class="ctitle">🏆 Ranking — Secretárias<span class="ctitle-sep"></span></div>
+          <div id="comRanking" style="display:flex;flex-direction:column;gap:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Registros pendentes de aprovação (só para Thiago) -->
+      <div class="card" id="comPendentesCard">
+        <div class="ctitle">⏳ Pendentes de Aprovação<span class="ctitle-sep"></span></div>
+        <div id="comPendentes" style="font-size:12px;color:var(--text3);">Nenhum pendente.</div>
+      </div>
+
+      <!-- Formulário de registro (para Daiana e Milena (secretárias)) -->
+      <div class="card" id="comFormCard" style="display:none;">
+        <div class="ctitle">➕ Registrar Visita / Venda / Locação<span class="ctitle-sep"></span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;">
+          <div id="comSecretariaWrap">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-family:var(--mono);">SECRETÁRIA</div>
+            <select class="fselect" id="comSecretaria" style="width:100%;">
+              <option value="Daiana Alves">Daiana Alves</option>
+              <option value="Milena Marina">Milena Marina</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-family:var(--mono);">TIPO</div>
+            <select class="fselect" id="comTipo" style="width:100%;" onchange="comAtualizarSubtipo()">
+              <option value="visita_compra_tel">Visita Compra (com telefone)</option>
+              <option value="visita_compra_semtel">Visita Compra (sem telefone)</option>
+              <option value="visita_locacao">Visita Locação</option>
+              <option value="venda">Venda Fechada</option>
+              <option value="locacao_fechada">Locação Fechada</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-family:var(--mono);">LEAD (ID ou Nome)</div>
+            <input class="finput" id="comLeadRef" placeholder="Ex: 85296521" style="width:100%;">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-family:var(--mono);">OBSERVAÇÃO</div>
+            <input class="finput" id="comObs" placeholder="Opcional" style="width:100%;">
+          </div>
+          <button class="btn" onclick="comRegistrar()" style="border-color:var(--cyan2);color:var(--cyan);height:32px;">Registrar</button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px;font-family:var(--mono);" id="comValorPreview">—</div>
+      </div>
+
+      <!-- Histórico do mês -->
+      <div class="card" style="margin-top:16px;">
+        <div class="ctitle">📋 Histórico do Mês<span class="ctitle-sep"></span></div>
+        <div style="overflow-x:auto;">
+          <table class="leads-table" id="comHistTable">
+            <thead><tr>
+              <th>Data</th><th>Corretora</th><th>Tipo</th><th>Lead</th><th>Obs</th><th style="text-align:right;">Valor</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="comHistBody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px;">Carregue um mês para ver o histórico.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /panelComissoes -->
+
 </div><!-- /appWrap -->
 
-<!-- OBS MODAL -->
+<!-- MODAL COMISSÃO -->
+<div class="obs-modal-overlay" id="comModalOverlay" onclick="comModalFechar(event)">
+  <div class="obs-modal" style="width:420px;">
+    <div class="obs-modal-title">💰 Registrar nas Comissões</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px;" id="comModalLeadInfo">—</div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px;">TIPO</div>
+      <select class="fselect" id="comModalTipo" style="width:100%;" onchange="comModalAtualizarValor()">
+        <option value="visita_compra">Visita Compra</option>
+        <option value="visita_locacao">Visita Locação</option>
+        <option value="venda">Venda Fechada</option>
+        <option value="locacao_fechada">Locação Fechada</option>
+      </select>
+    </div>
+    <div id="comModalSecretariaWrap" style="margin-bottom:10px;display:none;">
+      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px;">SECRETÁRIA</div>
+      <select class="fselect" id="comModalSecretaria" style="width:100%;">
+        <option value="Daiana Alves">Daiana Alves</option>
+        <option value="Milena Marina">Milena Marina</option>
+      </select>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px;">OBSERVAÇÃO</div>
+      <input class="finput" id="comModalObs" placeholder="Opcional" style="width:100%;">
+    </div>
+    <div class="obs-modal-footer">
+      <button class="obs-modal-btn" style="background:transparent;border:1px solid var(--border);color:var(--text3);" onclick="comModalFechar()">Cancelar</button>
+      <button class="obs-modal-btn" onclick="comModalSalvar()">💰 Registrar</button>
+    </div>
+  </div>
+</div>
 <div class="obs-modal-overlay" id="obsModalOverlay" onclick="obsModalFechar(event)">
   <div class="obs-modal">
     <div class="obs-modal-title">✏ Observação</div>
@@ -512,6 +646,7 @@ var FIREBASE = 'https://c2s-operacional-default-rtdb.firebaseio.com';
 // Nenhuma senha fica no HTML — autenticação via Firebase
 var usuarioAtual = null;
 var usuarioData  = null;
+var usuarioLogado = null; // alias para uso nas comissões
 var abaAtual = 'ops';
 
 /* ═══════════════════════════════════════
@@ -581,21 +716,28 @@ function entrarNoApp(user, data) {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appWrap').style.display = 'block';
   document.getElementById('nomeUsuario').textContent = user;
+  usuarioLogado = user;
+
+  // Inicializa mês de comissões com mês atual
+  var hoje2 = new Date();
+  document.getElementById('comMes').value = hoje2.getFullYear()+'-'+String(hoje2.getMonth()+1).padStart(2,'0');
 
   // Tabs de BI só para quem tem bi:true no Firebase
   var temBI = !!(data && data.bi);
-  document.getElementById('tabsWrap').style.display = temBI ? 'flex' : 'none';
+  var temComissoes = temBI || user === 'Daiana Alves' || user === 'Milena Marina';
+  document.getElementById('tabsWrap').style.display = (temBI || temComissoes) ? 'flex' : 'none';
+  document.getElementById('tabBI').style.display = temBI ? 'block' : 'none';
+  document.getElementById('tabComissoes').style.display = temComissoes ? 'block' : 'none';
   document.getElementById('btnAcessos').style.display = temBI ? 'inline-block' : 'none';
   document.getElementById('btnArquivo').style.display = temBI ? 'inline-block' : 'none';
 
   aplicarFiltroUsuario();
   carregarSalvos();
 
-  // datas padrão BI
-  var hoje = new Date();
-  var de30 = new Date(hoje); de30.setDate(hoje.getDate()-30);
-  document.getElementById('biDateTo').value = hoje.toISOString().split('T')[0];
-  document.getElementById('biDateFrom').value = de30.toISOString().split('T')[0];
+  // Datas padrão BI — abre no dia atual (local)
+  var hojeStr = hojeLocal();
+  document.getElementById('biDateTo').value = hojeStr;
+  document.getElementById('biDateFrom').value = hojeStr;
 }
 
 function sair() {
@@ -629,8 +771,11 @@ function mudarAba(aba) {
   abaAtual = aba;
   document.getElementById('tabOps').className = 'tab'+(aba==='ops'?' active':'');
   document.getElementById('tabBI').className  = 'tab'+(aba==='bi'?' active':'');
+  document.getElementById('tabComissoes').className = 'tab'+(aba==='comissoes'?' active':'');
   document.getElementById('panelOps').className = 'tab-panel'+(aba==='ops'?' active':'');
   document.getElementById('panelBI').className  = 'tab-panel'+(aba==='bi'?' active':'');
+  document.getElementById('panelComissoes').className = 'tab-panel'+(aba==='comissoes'?' active':'');
+  if(aba==='comissoes') carregarComissoes();
 }
 
 /* ═══════════════════════════════════════
@@ -915,6 +1060,7 @@ function renderizarTabela() {
       '<td style="white-space:nowrap"><select id="sel_'+l.id+'" class="status-select '+sm.cls+'" onchange="setStatus(\''+leadKey+'\',this.value)">'+opts+'</select><span id="hist_'+l.id+'" onclick="verHistorico(\''+leadKey+'\')" title="Ver histórico" style="display:'+(r.historico&&r.historico.length>0?'inline-block':'none')+';margin-left:4px;cursor:pointer;font-size:11px;color:var(--text2);border:1px solid var(--border);padding:1px 6px;border-radius:2px;">📋 '+(r.historico?r.historico.length:0)+'</span></td>'+
       '<td><div onmouseenter="obsShowTooltip(this,event)" onmouseleave="obsHideTooltip()" onclick="obsModalAbrir(\''+leadKey+'\',\''+l.id+'\')" style="cursor:pointer;padding:3px 4px;border-bottom:1px solid var(--border);min-height:22px;font-size:12px;color:'+(r.obs?'var(--text)':'var(--text3)')+';font-style:'+(r.obs?'normal':'italic')+';width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="Clique para editar">'+(r.obs||'Observação...')+'</div><div style="font-size:9px;color:var(--text3);text-align:right;font-family:var(--mono)" id="obscnt_'+l.id+'">'+(r.obs?r.obs.length:0)+'/1000</div></td>'+
       '<td><div id="visita_'+l.id+'" style="display:'+(r.status==='visita'||r.status==='revisita'?'flex':'none')+';flex-direction:column;gap:4px;"><input class="prox-input" type="date" value="'+esc(r.dataVisita||'')+'" style="width:120px" onchange="setDataVisita(\''+leadKey+'\',this.value)"><div style="display:flex;align-items:center;gap:6px;"><input class="prox-input" type="time" value="'+esc(r.hora||'09:00')+'" style="width:80px" onchange="setHora(\''+leadKey+'\',this.value)"><a id="gcal_'+l.id+'" href="#" target="_blank" style="font-size:10px;color:var(--cyan);border:1px solid rgba(0,212,255,0.3);padding:2px 8px;border-radius:2px;text-decoration:none;white-space:nowrap" onclick="atualizarBotaoOutlook(\''+leadKey+'\');">📅 Outlook</a></div></div>'+(r.status!=='visita'&&r.status!=='revisita'?'<span style="font-size:11px;color:var(--text3);">—</span>':'')+'</td>'+
+      '<td><button onclick="abrirComModal(\''+leadKey+'\',\''+esc(a.customer?a.customer.name:'')+'\',\''+esc(a.product?a.product.prop_ref:'')+'\',\''+l.id+'\',\''+esc(a.customer&&a.customer.phone?a.customer.phone:'')+'\',\''+esc(a.product&&a.product.real_estate_detail?a.product.real_estate_detail.negotiation_name:'')+'\')\" style=\"background:transparent;border:1px solid rgba(255,215,0,0.4);color:#ffd700;font-size:11px;cursor:pointer;padding:3px 8px;border-radius:3px;font-family:var(--mono);\" title=\"Registrar visita/venda nas comissões\">💰</button></td>'+
     '</tr>';
   }).join('');
   atualizarContadores();
@@ -1100,6 +1246,7 @@ function biRenderEvol(){
   document.getElementById('bEvolPico').textContent=maxV;
   document.getElementById('bEvolDias').textContent=todosKeys.length;
   document.getElementById('bEvolPicoDia').textContent=diaLabels[maxIdx]||'—';
+  document.getElementById('bEvolTotal').textContent=diaVals.reduce(function(a,b){return a+b;},0);
 
   // Destrói chart existente e recria o canvas para evitar ghosting/blur
   if(biGraficos['bcEvol']){biGraficos['bcEvol'].destroy();biGraficos['bcEvol']=null;}
@@ -1521,6 +1668,94 @@ function biMontarDashboard(leads,de,ate){
   },200);
 }
 
+/* ══ MODAL COMISSÃO (do Operacional) ══ */
+var comModalLeadKey=null, comModalLeadId=null, comModalLeadNome='', comModalLeadRef='';
+
+function abrirComModal(leadKey, nome, ref, leadId, telefone, natureza){
+  comModalLeadKey=leadKey; comModalLeadId=leadId;
+  comModalLeadNome=nome; comModalLeadRef=ref;
+  document.getElementById('comModalLeadInfo').textContent=(nome||'Lead')+' · '+(ref||leadKey)+(telefone?' · 📱 '+telefone:' · ⚠ Sem telefone');
+  document.getElementById('comModalObs').value='';
+
+  // Auto-seleciona tipo baseado no telefone e natureza
+  var nat=(natureza||'').toLowerCase();
+  var temTel=!!(telefone&&telefone.trim()&&telefone.trim()!=='0');
+  var tipoAuto = nat.indexOf('aluguel')>=0||nat.indexOf('locaç')>=0||nat.indexOf('locac')>=0
+    ? 'visita_locacao' : 'visita_compra';
+  document.getElementById('comModalTipo').value=tipoAuto;
+  // Guarda se tem telefone para calcular comissão correta
+  document.getElementById('comModalTipo').dataset.temTel = temTel?'1':'0';
+
+  // Mostra campo secretária só para Thiago
+  document.getElementById('comModalSecretariaWrap').style.display = usuarioLogado==='Thiago'?'block':'none';
+  comModalAtualizarValor();
+  document.getElementById('comModalOverlay').classList.add('active');
+}
+
+function comModalFechar(e){
+  if(e&&e.target!==document.getElementById('comModalOverlay')) return;
+  document.getElementById('comModalOverlay').classList.remove('active');
+}
+
+function comModalAtualizarValor(){
+  var sel=document.getElementById('comModalTipo');
+  var tipo=sel.value;
+  var temTel=sel.dataset.temTel!=='0';
+  var labels={
+    'visita_compra': temTel?'R$30 por visita (ou R$40 se meta atingida)':'R$60 por visita (ou R$75 se meta atingida)',
+    'visita_locacao':'R$20 — não conta para meta',
+    'venda':'R$200 / R$200 / R$300 / R$400+ por progressão',
+    'locacao_fechada':'R$100'
+  };
+  var el=document.getElementById('comModalValorInfo');
+  if(el) el.textContent=labels[tipo]||'';
+}
+
+async function comModalSalvar(){
+  var sel=document.getElementById('comModalTipo');
+  var tipo=sel.value;
+  var temTel=sel.dataset.temTel!=='0';
+  // Converte visita_compra para o tipo correto internamente
+  if(tipo==='visita_compra') tipo = temTel?'visita_compra_tel':'visita_compra_semtel';
+  var obs=document.getElementById('comModalObs').value.trim();
+  var secretaria = usuarioLogado==='Thiago'
+    ? document.getElementById('comModalSecretaria').value
+    : usuarioLogado;
+
+  var agora=new Date();
+  var mes=agora.getFullYear()+'-'+String(agora.getMonth()+1).padStart(2,'0');
+  var key=agora.getTime().toString();
+  var data=agora.toLocaleDateString('pt-BR');
+
+  var reg={
+    _key:key,
+    corretora:secretaria,
+    tipo:tipo,
+    lead_ref:comModalLeadRef||comModalLeadId,
+    lead_nome:comModalLeadNome,
+    obs:obs,
+    data:data,
+    status: usuarioLogado==='Thiago'?'aprovado':'pendente',
+    valor_calculado:null
+  };
+
+  await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'/'+key+'.json',{
+    method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(reg)
+  });
+
+  document.getElementById('comModalOverlay').classList.remove('active');
+  // Feedback visual
+  var btn=event.target; btn.textContent='✓ Registrado!';
+  setTimeout(function(){btn.textContent='💰 Registrar';},2000);
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    document.getElementById('comModalOverlay').classList.remove('active');
+    document.getElementById('obsModalOverlay').classList.remove('active');
+  }
+});
+
 /* ══ OBS MODAL ══ */
 var obsModalLeadKey=null; var obsModalLeadId=null;
 function obsModalAbrir(leadKey,leadId){
@@ -1570,8 +1805,262 @@ function obsMoveTooltip(e){
 function obsHideTooltip(){if(obsTooltipEl) obsTooltipEl.style.display='none';}
 document.addEventListener('mousemove',function(e){obsMoveTooltip(e);});
 
+/* ══ COMISSÕES ══ */
+var comDados = null;
+
+// Regras de comissão
+function comCalcularValor(tipo, totalVisitasCompra, totalVendasMes) {
+  var atingiuMeta = totalVisitasCompra >= 62 && totalVendasMes >= 4;
+  switch(tipo) {
+    case 'visita_compra_tel':    return atingiuMeta ? 40 : 30;
+    case 'visita_compra_semtel': return atingiuMeta ? 75 : 60;
+    case 'visita_locacao':       return 20;
+    case 'locacao_fechada':      return 100;
+    case 'venda':                return 0; // calculado separado por progressão
+    default: return 0;
+  }
+}
+
+function comCalcularVenda(nVenda) {
+  if(nVenda <= 2) return 200;
+  if(nVenda === 3) return 300;
+  return 400;
+}
+
+function comTipoLabel(tipo) {
+  var m = {
+    'visita_compra_tel':'Visita Compra (com tel)',
+    'visita_compra_semtel':'Visita Compra (sem tel)',
+    'visita_locacao':'Visita Locação',
+    'venda':'Venda Fechada',
+    'locacao_fechada':'Locação Fechada'
+  };
+  return m[tipo]||tipo;
+}
+
+function comAtualizarSubtipo() {
+  comAtualizarPreview();
+}
+
+function comAtualizarPreview() {
+  var tipo = document.getElementById('comTipo').value;
+  var el = document.getElementById('comValorPreview');
+  var labels = {
+    'visita_compra_tel': 'R$30 (ou R$40 se meta atingida)',
+    'visita_compra_semtel': 'R$60 (ou R$75 se meta atingida)',
+    'visita_locacao': 'R$20 — não conta para meta',
+    'venda': 'R$200 / R$200 / R$300 / R$400+ por progressão',
+    'locacao_fechada': 'R$100'
+  };
+  el.textContent = labels[tipo]||'';
+}
+
+async function carregarComissoes() {
+  var mes = document.getElementById('comMes').value;
+  if(!mes) return;
+  document.getElementById('comStatusTxt').textContent = 'Carregando...';
+
+  try {
+    var resp = await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'.json');
+    var data = await resp.json();
+    comDados = data || {};
+    renderComissoes(mes);
+    document.getElementById('comStatusTxt').textContent = '';
+  } catch(e) {
+    document.getElementById('comStatusTxt').textContent = 'Erro ao carregar';
+  }
+}
+
+function renderComissoes(mes) {
+  var dados = comDados || {};
+  var registros = Object.values(dados);
+
+  // Separar aprovados
+  var aprovados = registros.filter(function(r){return r.status==='aprovado';});
+  var pendentes = registros.filter(function(r){return r.status==='pendente';});
+
+  // Calcular totais por pessoa e caixa único
+  var pessoas = {'Daiana Alves':{visitas_compra:0,visitas_locacao:0,vendas:0,locacoes:0,comissao:0},
+                 'Milena Marina':{visitas_compra:0,visitas_locacao:0,vendas:0,locacoes:0,comissao:0}};
+
+  var totalVisitasCompra = aprovados.filter(function(r){return r.tipo==='visita_compra_tel'||r.tipo==='visita_compra_semtel';}).length;
+  var totalVendas = aprovados.filter(function(r){return r.tipo==='venda';}).length;
+
+  // Conta vendas por pessoa para progressão
+  var vendasPorPessoa = {'Daiana Alves':0,'Milena Marina':0};
+  aprovados.sort(function(a,b){return a.data>b.data?1:-1;}).forEach(function(r){
+    var p = pessoas[r.corretora];
+    if(!p) return;
+    if(r.tipo==='visita_compra_tel'||r.tipo==='visita_compra_semtel'){
+      p.visitas_compra++;
+      p.comissao += comCalcularValor(r.tipo, totalVisitasCompra, totalVendas);
+    } else if(r.tipo==='visita_locacao'){
+      p.visitas_locacao++;
+      p.comissao += 20;
+    } else if(r.tipo==='venda'){
+      vendasPorPessoa[r.corretora]++;
+      p.vendas++;
+      p.comissao += comCalcularVenda(vendasPorPessoa[r.corretora]);
+    } else if(r.tipo==='locacao_fechada'){
+      p.locacoes++;
+      p.comissao += 100;
+    }
+  });
+
+  var totalComissao = Object.values(pessoas).reduce(function(s,p){return s+p.comissao;},0);
+  var totalLocacoes = Object.values(pessoas).reduce(function(s,p){return s+p.locacoes;},0);
+  var atingiuMeta = totalVisitasCompra>=62 && totalVendas>=4;
+
+  // KPIs
+  document.getElementById('comTotalVisitas').textContent = totalVisitasCompra;
+  document.getElementById('comTotalVendas').textContent = totalVendas;
+  document.getElementById('comTotalLocacoes').textContent = totalLocacoes;
+  document.getElementById('comTotalComissao').textContent = 'R$'+totalComissao.toLocaleString('pt-BR');
+  var pct = Math.min(Math.round(totalVisitasCompra/62*100),100);
+  document.getElementById('comMetaBar').style.width = pct+'%';
+  document.getElementById('comMetaBar').style.background = atingiuMeta?'linear-gradient(90deg,#00aa55,#00ff9d)':'linear-gradient(90deg,#0099cc,#00d4ff)';
+  document.getElementById('comMetaPct').textContent = pct+'%';
+  document.getElementById('comRegraAtual').textContent = atingiuMeta
+    ? '✅ META ATINGIDA — R$40/visita com tel · R$75/visita sem tel'
+    : '📍 Faltam '+(62-totalVisitasCompra)+' visitas para majoração (e min. 4 vendas)';
+
+  // Ranking
+  var rank = document.getElementById('comRanking');
+  rank.innerHTML = Object.entries(pessoas).map(function(e,i){
+    var nome=e[0], p=e[1];
+    var total = p.visitas_compra+p.visitas_locacao;
+    return '<div style="padding:10px;background:var(--bg3);border-radius:4px;">'
+      +'<div style="display:flex;justify-content:space-between;margin-bottom:6px;">'
+      +'<span style="font-weight:700;color:var(--text);">'+(i===0?'🥇 ':'🥈 ')+nome+'</span>'
+      +'<span style="font-family:var(--mono);color:#ffd700;font-size:14px;">R$'+p.comissao.toLocaleString('pt-BR')+'</span>'
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">'
+      +'Visitas compra: '+p.visitas_compra+' · Visitas locação: '+p.visitas_locacao+' · Vendas: '+p.vendas+' · Locações fechadas: '+p.locacoes
+      +'</div></div>';
+  }).join('');
+
+  // Pendentes (só para Thiago)
+  var isPendCard = document.getElementById('comPendentesCard');
+  if(usuarioLogado === 'Thiago') {
+    isPendCard.style.display = 'block';
+    if(pendentes.length===0){
+      document.getElementById('comPendentes').innerHTML = '<span style="color:var(--text3)">Nenhum pendente.</span>';
+    } else {
+      document.getElementById('comPendentes').innerHTML = pendentes.map(function(r){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">'
+          +'<div><span style="color:var(--cyan);font-family:var(--mono);">'+r.corretora+'</span> · '+comTipoLabel(r.tipo)+' · Lead: '+(r.lead_ref||'—')+' · '+(r.obs||'')+'</div>'
+          +'<div style="display:flex;gap:8px;">'
+          +'<button class="btn" onclick="comAprovar(\''+r._key+'\')" style="border-color:#00ff9d;color:#00ff9d;padding:3px 10px;font-size:11px;">✓ Aprovar</button>'
+          +'<button class="btn" onclick="comRejeitar(\''+r._key+'\')" style="border-color:#ff3232;color:#ff3232;padding:3px 10px;font-size:11px;">✗ Rejeitar</button>'
+          +'</div></div>';
+      }).join('');
+    }
+  } else {
+    isPendCard.style.display = 'none';
+  }
+
+  // Formulário manual só para Thiago (casos excepcionais)
+  document.getElementById('comFormCard').style.display = usuarioLogado==='Thiago' ? 'block' : 'none';
+  var corretorWrap = document.getElementById('comSecretariaWrap');
+  if(corretorWrap) corretorWrap.style.display = 'block';
+  comAtualizarPreview();
+
+  // Histórico
+  var tbody = document.getElementById('comHistBody');
+  if(registros.length===0){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px;">Sem registros neste mês.</td></tr>';
+  } else {
+    tbody.innerHTML = registros.sort(function(a,b){return a.data>b.data?-1:1;}).map(function(r){
+      var corStatus = r.status==='aprovado'?'#00ff9d':r.status==='rejeitado'?'#ff3232':'#ff7b2c';
+      return '<tr>'
+        +'<td style="font-family:var(--mono);font-size:11px;">'+r.data+'</td>'
+        +'<td>'+r.corretora+'</td>'
+        +'<td>'+comTipoLabel(r.tipo)+'</td>'
+        +'<td style="font-family:var(--mono);">'+(r.lead_ref||'—')+'</td>'
+        +'<td style="font-size:11px;color:var(--text3);">'+(r.obs||'')+'</td>'
+        +'<td style="text-align:right;font-family:var(--mono);color:#ffd700;">'+(r.valor_calculado?'R$'+r.valor_calculado:'—')+'</td>'
+        +'<td style="color:'+corStatus+';font-family:var(--mono);font-size:11px;">'+r.status+'</td>'
+        +'<td>'+(r.status==='pendente'&&usuarioLogado===r.corretora?'<button class="btn" onclick="comCancelar(\''+r._key+'\')" style="padding:2px 8px;font-size:10px;border-color:#888;color:#888;">Cancelar</button>':'')+'</td>'
+        +'</tr>';
+    }).join('');
+  }
+}
+
+async function comRegistrar() {
+  var tipo = document.getElementById('comTipo').value;
+  var lead_ref = document.getElementById('comLeadRef').value.trim();
+  var obs = document.getElementById('comObs').value.trim();
+  var mes = document.getElementById('comMes').value;
+  if(!mes){alert('Selecione o mês!');return;}
+
+  var agora = new Date();
+  var key = agora.getTime().toString();
+  var data = agora.toLocaleDateString('pt-BR');
+
+  var corretora = usuarioLogado==='Thiago'
+    ? document.getElementById('comSecretaria').value
+    : usuarioLogado;
+
+  var reg = {
+    _key: key,
+    corretora: corretora,
+    tipo: tipo,
+    lead_ref: lead_ref,
+    obs: obs,
+    data: data,
+    status: usuarioLogado==='Thiago' ? 'aprovado' : 'pendente',
+    valor_calculado: null
+  };
+
+  await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'/'+key+'.json',{
+    method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(reg)
+  });
+
+  document.getElementById('comLeadRef').value='';
+  document.getElementById('comObs').value='';
+  carregarComissoes();
+}
+
+async function comAprovar(key) {
+  var mes = document.getElementById('comMes').value;
+  var dados = comDados||{};
+  var reg = dados[key];
+  if(!reg) return;
+
+  // Recalcula com o estado atual
+  var aprovados = Object.values(dados).filter(function(r){return r.status==='aprovado';});
+  var totalVisitasCompra = aprovados.filter(function(r){return r.tipo==='visita_compra_tel'||r.tipo==='visita_compra_semtel';}).length + (reg.tipo==='visita_compra_tel'||reg.tipo==='visita_compra_semtel'?1:0);
+  var totalVendas = aprovados.filter(function(r){return r.tipo==='venda';}).length + (reg.tipo==='venda'?1:0);
+  var vendasPessoa = aprovados.filter(function(r){return r.corretora===reg.corretora&&r.tipo==='venda';}).length+1;
+
+  var valor = reg.tipo==='venda' ? comCalcularVenda(vendasPessoa) : comCalcularValor(reg.tipo, totalVisitasCompra, totalVendas);
+
+  await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'/'+key+'.json',{
+    method:'PATCH',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({status:'aprovado',valor_calculado:valor})
+  });
+  carregarComissoes();
+}
+
+async function comRejeitar(key) {
+  var mes = document.getElementById('comMes').value;
+  await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'/'+key+'.json',{
+    method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'rejeitado'})
+  });
+  carregarComissoes();
+}
+
+async function comCancelar(key) {
+  var mes = document.getElementById('comMes').value;
+  await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'/'+key+'.json',{
+    method:'DELETE'
+  });
+  carregarComissoes();
+}
+
 /* ══ INIT ══ */
-var hoje = new Date().toISOString().split('T')[0];
+function hojeLocal(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+var hoje = hojeLocal();
 document.getElementById('dateTo').value = hoje;
 document.getElementById('dateFrom').value = hoje;
 verificarLoginSalvo();
