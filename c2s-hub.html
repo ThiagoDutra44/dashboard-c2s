@@ -2140,6 +2140,9 @@ function renderComissoes(mes) {
 }
 
 async function comRegistrar() {
+  // Guarda (paliativa — proteção definitiva é server-side na Fase 2)
+  if (!usuarioLogado) { mostrarToast('⚠ Sessão inválida — faça login novamente','erro'); return; }
+
   var tipo = document.getElementById('comTipo').value;
   var lead_ref = document.getElementById('comLeadRef').value.trim();
   var obs = document.getElementById('comObs').value.trim();
@@ -2175,6 +2178,9 @@ async function comRegistrar() {
 }
 
 async function comAprovar(key) {
+  // Guarda (paliativa — proteção definitiva é server-side na Fase 2)
+  if (usuarioLogado !== 'Thiago') { mostrarToast('⚠ Sem permissão para aprovar comissões','erro'); return; }
+
   var mes = document.getElementById('comMes').value;
   var dados = comDados||{};
   var reg = dados[key];
@@ -2195,15 +2201,18 @@ async function comAprovar(key) {
   carregarComissoes();
 }
 
-async function comRejeitar(key) {
-  var mes = document.getElementById('comMes').value;
-  await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'/'+key+'.json',{
-    method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'rejeitado'})
-  });
-  carregarComissoes();
-}
-
 async function comCancelar(key) {
+  // Guarda (paliativa — proteção definitiva é server-side na Fase 2)
+  var dados = comDados||{};
+  var reg = dados[key];
+  if (!reg) return;
+  if (usuarioLogado !== 'Thiago' && usuarioLogado !== reg.corretora) {
+    mostrarToast('⚠ Sem permissão para cancelar este registro','erro'); return;
+  }
+  if (reg.status !== 'pendente') {
+    mostrarToast('⚠ Só registros pendentes podem ser cancelados','erro'); return;
+  }
+
   var mes = document.getElementById('comMes').value;
   await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'/'+key+'.json',{
     method:'DELETE'
@@ -2227,6 +2236,9 @@ function reprovarModalFechar(e) {
 }
 
 async function reprovarConfirmar() {
+  // Guarda (paliativa — proteção definitiva é server-side na Fase 2)
+  if (usuarioLogado !== 'Thiago') { mostrarToast('⚠ Sem permissão para reprovar comissões','erro'); return; }
+
   if(!reprovarKey) return;
   var motivo = document.getElementById('reprovarMotivo').value.trim();
   var mes = document.getElementById('comMes').value;
