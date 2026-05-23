@@ -207,6 +207,16 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
 </style>
 </head>
 <body>
+<!-- Banner de notificação de reprovação -->
+<div id="notifBanner" style="display:none;position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(10,25,45,0.98);border:1px solid #ff3232;border-radius:6px;padding:12px 16px;min-width:320px;max-width:480px;box-shadow:0 4px 24px rgba(0,0,0,0.5);">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+    <div>
+      <div style="color:#ff3232;font-family:var(--mono);font-size:11px;letter-spacing:2px;margin-bottom:4px;">❌ REGISTRO REPROVADO</div>
+      <div id="notifTexto" style="color:var(--text);font-size:12px;line-height:1.6;"></div>
+    </div>
+    <button onclick="fecharNotif()" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0;line-height:1;">✕</button>
+  </div>
+</div>
 
 <!-- ════════════════════════════
      LOGIN
@@ -242,6 +252,7 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
       <div class="pill" id="lastUpdate">—</div>
       <div class="pill live">● ONLINE</div>
       <button class="btn danger" onclick="sair()">Sair</button>
+      <button class="btn" id="btnBackup" onclick="fazerBackup()" style="display:none;border-color:rgba(0,212,255,0.4);color:var(--cyan);font-size:11px;">💾 Backup</button>
     </div>
   </div>
 
@@ -641,6 +652,19 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
   </div>
 </div>
 
+<!-- Modal de Reprovação -->
+<div class="obs-modal-overlay" id="reprovarModalOverlay" onclick="reprovarModalFechar(event)">
+  <div class="obs-modal" style="max-width:420px;">
+    <div class="obs-modal-title" style="color:#ff3232;">✗ Reprovar Registro</div>
+    <div id="reprovarModalInfo" style="font-size:12px;color:var(--text3);margin-bottom:10px;"></div>
+    <textarea class="obs-modal-textarea" id="reprovarMotivo" maxlength="500" placeholder="Motivo da reprovação (opcional)..." style="height:80px;"></textarea>
+    <div class="obs-modal-footer">
+      <button class="obs-modal-btn" onclick="reprovarModalFechar(null)" style="background:transparent;border:1px solid #888;color:#888;margin-right:8px;">Cancelar</button>
+      <button class="obs-modal-btn" onclick="reprovarConfirmar()" style="background:rgba(255,50,50,0.15);border-color:#ff3232;color:#ff3232;">✗ Confirmar Reprovação</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ═══════════════════════════════════════
    CONFIGURAÇÕES GLOBAIS
@@ -738,6 +762,12 @@ function entrarNoApp(user, data) {
 
   aplicarFiltroUsuario();
   carregarSalvos();
+
+  // Botão backup só para Thiago
+  document.getElementById('btnBackup').style.display = user==='Thiago' ? 'inline-block' : 'none';
+
+  // Verifica notificações de reprovação
+  setTimeout(verificarNotificacoes, 1500);
 
   // Datas padrão BI — abre no dia atual (local)
   var hojeStr = hojeLocal();
@@ -2056,7 +2086,7 @@ function renderComissoes(mes) {
           +'<div><span style="color:var(--cyan);font-family:var(--mono);">'+r.corretora+'</span> · '+comTipoLabel(r.tipo)+' · Lead: '+(r.lead_ref||'—')+' · '+(r.obs||'')+'</div>'
           +'<div style="display:flex;gap:8px;">'
           +'<button class="btn" onclick="comAprovar(\''+r._key+'\')" style="border-color:#00ff9d;color:#00ff9d;padding:3px 10px;font-size:11px;">✓ Aprovar</button>'
-          +'<button class="btn" onclick="comRejeitar(\''+r._key+'\')" style="border-color:#ff3232;color:#ff3232;padding:3px 10px;font-size:11px;">✗ Rejeitar</button>'
+          +'<button class="btn" onclick="abrirReprovarModal(\''+r._key+'\',\''+r.corretora+'\',\''+comTipoLabel(r.tipo)+'\')" style="border-color:#ff3232;color:#ff3232;padding:3px 10px;font-size:11px;">✗ Reprovar</button>'
           +'</div></div>';
       }).join('');
     }
@@ -2085,7 +2115,10 @@ function renderComissoes(mes) {
         +'<td style="font-size:11px;color:var(--text3);">'+(r.obs||'')+'</td>'
         +'<td style="text-align:right;font-family:var(--mono);color:#ffd700;">'+(r.valor_calculado?'R$'+r.valor_calculado:'—')+'</td>'
         +'<td style="color:'+corStatus+';font-family:var(--mono);font-size:11px;">'+r.status+'</td>'
-        +'<td>'+(r.status==='pendente'&&usuarioLogado===r.corretora?'<button class="btn" onclick="comCancelar(\''+r._key+'\')" style="padding:2px 8px;font-size:10px;border-color:#888;color:#888;">Cancelar</button>':'')+'</td>'
+        +'<td>'
+        +(r.status==='pendente'&&usuarioLogado===r.corretora?'<button class="btn" onclick="comCancelar(\''+r._key+'\')" style="padding:2px 8px;font-size:10px;border-color:#888;color:#888;">Cancelar</button>':'')
+        +(r.status==='aprovado'&&usuarioLogado==='Thiago'?'<button class="btn" onclick="abrirReprovarModal(\''+r._key+'\',\''+r.corretora+'\',\''+comTipoLabel(r.tipo)+'\')" style="padding:2px 8px;font-size:10px;border-color:#ff3232;color:#ff3232;">✗ Reprovar</button>':'')
+        +'</td>'
         +'</tr>';
     }).join('');
   }
@@ -2161,6 +2194,127 @@ async function comCancelar(key) {
     method:'DELETE'
   });
   carregarComissoes();
+}
+
+/* ══ REPROVAR COM MOTIVO ══ */
+var reprovarKey=null, reprovarCorretora=null;
+
+function abrirReprovarModal(key, corretora, tipoLabel) {
+  reprovarKey=key; reprovarCorretora=corretora;
+  document.getElementById('reprovarModalInfo').textContent = corretora+' · '+tipoLabel;
+  document.getElementById('reprovarMotivo').value='';
+  document.getElementById('reprovarModalOverlay').classList.add('active');
+}
+
+function reprovarModalFechar(e) {
+  if(e&&e.target!==document.getElementById('reprovarModalOverlay')) return;
+  document.getElementById('reprovarModalOverlay').classList.remove('active');
+}
+
+async function reprovarConfirmar() {
+  if(!reprovarKey) return;
+  var motivo = document.getElementById('reprovarMotivo').value.trim();
+  var mes = document.getElementById('comMes').value;
+
+  // Marca como reprovado no Firebase com motivo
+  await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'/'+reprovarKey+'.json',{
+    method:'PATCH',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({status:'reprovado', motivo_reprovacao:motivo||'', valor_calculado:null})
+  });
+
+  // Salva notificação para a corretora
+  if(reprovarCorretora) {
+    var notifKey = Date.now().toString();
+    await fetch(FIREBASE+'/notificacoes/'+reprovarCorretora.replace(/\s/g,'_')+'/'+notifKey+'.json',{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        tipo:'reprovacao',
+        motivo: motivo||'Sem motivo informado.',
+        data: new Date().toLocaleDateString('pt-BR'),
+        lida: false
+      })
+    });
+  }
+
+  // Recalcula comissões do mês
+  document.getElementById('reprovarModalOverlay').classList.remove('active');
+  await recalcularComissoes(mes);
+  carregarComissoes();
+  mostrarToast('✗ Registro reprovado.');
+}
+
+async function recalcularComissoes(mes) {
+  var resp = await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'.json');
+  var dados = await resp.json();
+  if(!dados) return;
+  var aprovados = Object.values(dados).filter(function(r){return r.status==='aprovado';});
+  var totalVisitasCompra = aprovados.filter(function(r){return r.tipo==='visita_compra_tel'||r.tipo==='visita_compra_semtel';}).length;
+  var totalVendas = aprovados.filter(function(r){return r.tipo==='venda';}).length;
+  var updates={};
+  var vendasPorPessoa={};
+  aprovados.forEach(function(r){
+    if(r.tipo==='venda'){
+      vendasPorPessoa[r.corretora]=(vendasPorPessoa[r.corretora]||0)+1;
+      updates[r._key]={valor_calculado: comCalcularVenda(vendasPorPessoa[r.corretora])};
+    } else {
+      updates[r._key]={valor_calculado: comCalcularValor(r.tipo, totalVisitasCompra, totalVendas)};
+    }
+  });
+  for(var k in updates){
+    await fetch(FIREBASE+'/comissoes/'+mes.replace('-','/')+'/'+k+'.json',{
+      method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(updates[k])
+    });
+  }
+}
+
+/* ══ NOTIFICAÇÕES ══ */
+async function verificarNotificacoes() {
+  if(!usuarioLogado||usuarioLogado==='Thiago') return;
+  var chave = usuarioLogado.replace(/\s/g,'_');
+  try {
+    var resp = await fetch(FIREBASE+'/notificacoes/'+chave+'.json');
+    var dados = await resp.json();
+    if(!dados) return;
+    var naoLidas = Object.entries(dados).filter(function(e){return !e[1].lida;});
+    if(naoLidas.length===0) return;
+    // Mostra a mais recente
+    var ultima = naoLidas[naoLidas.length-1];
+    var notif = ultima[1];
+    var notifId = ultima[0];
+    var texto = '<strong>Registro reprovado em '+notif.data+'</strong>';
+    if(notif.motivo) texto += '<br><span style="color:var(--text3);">Motivo: '+notif.motivo+'</span>';
+    document.getElementById('notifTexto').innerHTML = texto;
+    document.getElementById('notifBanner').style.display='block';
+    // Marca como lida
+    await fetch(FIREBASE+'/notificacoes/'+chave+'/'+notifId+'.json',{
+      method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lida:true})
+    });
+  } catch(e){}
+}
+
+function fecharNotif() {
+  document.getElementById('notifBanner').style.display='none';
+}
+
+/* ══ BACKUP ══ */
+async function fazerBackup() {
+  try {
+    var resp = await fetch(FIREBASE+'/registros.json');
+    var dados = await resp.json();
+    var blob = new Blob([JSON.stringify(dados,null,2)],{type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var hoje = new Date();
+    a.download = 'registros-backup-'+String(hoje.getDate()).padStart(2,'0')+String(hoje.getMonth()+1).padStart(2,'0')+hoje.getFullYear()+'.json';
+    a.href = url;
+    a.click();
+    URL.revokeObjectURL(url);
+    mostrarToast('💾 Backup baixado!');
+  } catch(e) {
+    mostrarToast('Erro ao fazer backup: '+e.message);
+  }
 }
 
 /* ══ INIT ══ */
