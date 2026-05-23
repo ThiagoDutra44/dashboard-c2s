@@ -105,6 +105,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .s-semtel{background:rgba(255,80,80,0.08);border-color:rgba(255,80,80,0.25);color:#ff5050;}
 .s-finalizado{background:rgba(0,255,157,0.12);border-color:rgba(0,255,157,0.4);color:var(--green);font-weight:700;}
 .s-viscancelada{background:rgba(255,50,50,0.08);border-color:rgba(255,50,50,0.3);color:#ff3232;text-decoration:line-through;}
+.s-visrealizada{background:rgba(0,200,100,0.1);border-color:rgba(0,200,100,0.3);color:#00cc66;}
 .s-repetido{background:rgba(180,100,255,0.08);border-color:rgba(180,100,255,0.25);color:#b464ff;}
 .s-imovelvend{background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.4);color:#00d4ff;font-weight:700;}
 .s-negociofech{background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.4);color:#ffd700;font-weight:700;}
@@ -274,6 +275,8 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
         <option value="parou">Parou de Responder</option>
         <option value="visita">Visita Agendada</option>
         <option value="revisita">Revisita Agendada</option>
+        <option value="visrealizada">Visita Realizada</option>
+        <option value="revisrealizada">Revisita Realizada</option>
         <option value="viscancelada">Visita Cancelada</option>
         <option value="nao">Não Responde</option>
         <option value="semtel">Telefone Não Existe</option>
@@ -315,6 +318,8 @@ tr:nth-child(2) .rank-badge{background:rgba(107,154,184,0.1);border-color:var(--
       <div class="counter"><div class="counter-dot" style="background:#888"></div><span class="counter-label">Parou</span><span class="counter-val" id="cParou" style="color:#888">0</span></div>
       <div class="counter"><div class="counter-dot" style="background:var(--yellow)"></div><span class="counter-label">Visita</span><span class="counter-val" id="cVisita" style="color:var(--yellow)">0</span></div>
       <div class="counter"><div class="counter-dot" style="background:#00aaff"></div><span class="counter-label">Revisita</span><span class="counter-val" id="cRevisita" style="color:#00aaff">0</span></div>
+      <div class="counter"><div class="counter-dot" style="background:#00cc66"></div><span class="counter-label">Vis. Realizada</span><span class="counter-val" id="cVisrealizada" style="color:#00cc66">0</span></div>
+      <div class="counter"><div class="counter-dot" style="background:#00cc66"></div><span class="counter-label">Revis. Realizada</span><span class="counter-val" id="cRevisrealizada" style="color:#00cc66">0</span></div>
       <div class="counter"><div class="counter-dot" style="background:#ff3232"></div><span class="counter-label">Vis. Cancelada</span><span class="counter-val" id="cViscancelada" style="color:#ff3232">0</span></div>
       <div class="counter"><div class="counter-dot" style="background:var(--red)"></div><span class="counter-label">Não Responde</span><span class="counter-val" id="cNao" style="color:var(--red)">0</span></div>
       <div class="counter"><div class="counter-dot" style="background:#ff5050"></div><span class="counter-label">Tel. Não Existe</span><span class="counter-val" id="cSemtel" style="color:#ff5050">0</span></div>
@@ -792,9 +797,11 @@ var SMAP = {
   'novo':        {label:'🔵 Novo',                    cls:'s-novo'},
   'aguagend':    {label:'⏳ Aguardando Agendamento',   cls:'s-aguard'},
   'conversando': {label:'💬 Conversando',              cls:'s-conversando'},
-  'visita':      {label:'📅 Visita Agendada',          cls:'s-visita'},
-  'revisita':    {label:'🔄 Revisita Agendada',        cls:'s-visita'},
-  'viscancelada':{label:'❌ Visita Cancelada',          cls:'s-viscancelada'},
+  'visita':        {label:'📅 Visita Agendada',          cls:'s-visita'},
+  'revisita':      {label:'🔄 Revisita Agendada',        cls:'s-visita'},
+  'visrealizada':  {label:'✅ Visita Realizada',          cls:'s-visrealizada'},
+  'revisrealizada':{label:'✅ Revisita Realizada',        cls:'s-visrealizada'},
+  'viscancelada':  {label:'❌ Visita Cancelada',          cls:'s-viscancelada'},
   'nao':         {label:'📵 Não Responde',             cls:'s-nao'},
   'semtel':      {label:'📵 Telefone Não Existe',      cls:'s-semtel'},
   'parou':       {label:'🔇 Parou de Responder',       cls:'s-parou'},
@@ -874,11 +881,27 @@ function setStatus(id, val) {
   var reg=getReg(id); var ant=reg.status;
   if (ant!==val) { if(!reg.historico) reg.historico=[]; reg.historico.push({de:ant,para:val,por:usuarioAtual||'—',em:new Date().toLocaleString('pt-BR')}); }
   reg.status=val; salvar();
-  var sel=document.getElementById('sel_'+id); if(sel) sel.className='status-select '+SMAP[val].cls;
+  var sel=document.getElementById('sel_'+id); if(sel) sel.className='status-select '+(SMAP[val]?SMAP[val].cls:'');
   var vc=document.getElementById('visita_'+id); if(vc) vc.style.display=(val==='visita'||val==='revisita')?'flex':'none';
   if (val==='viscancelada') {
     var lead=todosLeads.find(function(l){return (getLeadKey(l)||l.id)===id;});
     if (lead) { var a=lead.attributes||{}; var nome=a.customer?a.customer.name:'Cliente'; var url='https://outlook.office.com/calendar/action/compose?subject='+encodeURIComponent('CANCELADO - Visita — '+nome)+'&rru=addevent'; window.open(url,'_blank'); }
+  }
+  // Visita Realizada → abre modal 💰
+  if (val==='visrealizada') {
+    var lead=todosLeads.find(function(l){return (getLeadKey(l)||l.id)===id;});
+    if (lead) {
+      var a=lead.attributes||{};
+      setTimeout(function(){ abrirComModal(id, a.customer?a.customer.name:'', a.product?a.product.prop_ref:'', id, a.customer?String(a.customer.phone||''):'', a.product&&a.product.real_estate_detail?a.product.real_estate_detail.negotiation_name:''); }, 150);
+    }
+  }
+  // Revisita Realizada → abre modal 💰 (conta como visita)
+  if (val==='revisrealizada') {
+    var lead=todosLeads.find(function(l){return (getLeadKey(l)||l.id)===id;});
+    if (lead) {
+      var a=lead.attributes||{};
+      setTimeout(function(){ abrirComModal(id, a.customer?a.customer.name:'', a.product?a.product.prop_ref:'', id, a.customer?String(a.customer.phone||''):'', a.product&&a.product.real_estate_detail?a.product.real_estate_detail.negotiation_name:''); }, 150);
+    }
   }
   atualizarContadores(); atualizarBotaoHistorico(id);
 }
@@ -997,9 +1020,9 @@ function leadsFiltrados() {
 
 function atualizarContadores() {
   var leads=leadsFiltrados();
-  var c={novo:0,aguagend:0,conversando:0,parou:0,visita:0,revisita:0,viscancelada:0,nao:0,semtel:0,permuta:0,proposta:0,semint:0,parceria:0,finalizado:0,repetido:0,imovelvend:0,negociofech:0};
+  var c={novo:0,aguagend:0,conversando:0,parou:0,visita:0,revisita:0,visrealizada:0,revisrealizada:0,viscancelada:0,nao:0,semtel:0,permuta:0,proposta:0,semint:0,parceria:0,finalizado:0,repetido:0,imovelvend:0,negociofech:0};
   leads.forEach(function(l){var s=getReg(getLeadKey(l)||l.id).status;c[s]=(c[s]||0)+1;});
-  ['Novo:cNovo:cyan','Aguagend:cAguagend:orange','Conversando:cConversando:#00b4ff','Parou:cParou:#888','Visita:cVisita:yellow','Revisita:cRevisita:#00aaff','Viscancelada:cViscancelada:#ff3232','Nao:cNao:red','Semtel:cSemtel:#ff5050','Permuta:cPermuta:#ffaa00','Proposta:cProposta:purple','SemInt:cSemInt:text2','Parceria:cParceria:green','Finalizado:cFinalizado:green','Repetido:cRepetido:#b464ff','Imovelvend:cImovelvend:#00d4ff','Negociofech:cNegociofech:#ffd700'].forEach(function(s){var p=s.split(':');var el=document.getElementById(p[1]);if(el) el.textContent=c[p[0].toLowerCase()]||0;});
+  ['Novo:cNovo:cyan','Aguagend:cAguagend:orange','Conversando:cConversando:#00b4ff','Parou:cParou:#888','Visita:cVisita:yellow','Revisita:cRevisita:#00aaff','Visrealizada:cVisrealizada:#00cc66','Revisrealizada:cRevisrealizada:#00cc66','Viscancelada:cViscancelada:#ff3232','Nao:cNao:red','Semtel:cSemtel:#ff5050','Permuta:cPermuta:#ffaa00','Proposta:cProposta:purple','SemInt:cSemInt:text2','Parceria:cParceria:green','Finalizado:cFinalizado:green','Repetido:cRepetido:#b464ff','Imovelvend:cImovelvend:#00d4ff','Negociofech:cNegociofech:#ffd700'].forEach(function(s){var p=s.split(':');var el=document.getElementById(p[1]);if(el) el.textContent=c[p[0].toLowerCase()]||0;});
   atualizarResumo(c,leads.length);
   document.getElementById('cTotal').textContent=leads.length;
 }
@@ -1715,7 +1738,6 @@ async function comModalSalvar(){
   var sel=document.getElementById('comModalTipo');
   var tipo=sel.value;
   var temTel=sel.dataset.temTel!=='0';
-  // Converte visita_compra para o tipo correto internamente
   if(tipo==='visita_compra') tipo = temTel?'visita_compra_tel':'visita_compra_semtel';
   var obs=document.getElementById('comModalObs').value.trim();
   var secretaria = usuarioLogado==='Thiago'
@@ -1743,10 +1765,93 @@ async function comModalSalvar(){
     method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(reg)
   });
 
+  // Se for visita, atualiza status do lead e reatribui se necessário
+  if((tipo==='visita_compra_tel'||tipo==='visita_compra_semtel'||tipo==='visita_locacao') && comModalLeadId) {
+    var leadId=comModalLeadId;
+    var regLead=getReg(leadId);
+    var statusAtual=regLead.status;
+
+    // Determina novo status: revisita agendada → revisita realizada, demais → visita realizada
+    var novoStatus = statusAtual==='revisita' ? 'revisrealizada' : 'visrealizada';
+
+    if(statusAtual!==novoStatus){
+      if(!regLead.historico) regLead.historico=[];
+      regLead.historico.push({de:statusAtual,para:novoStatus,por:secretaria,em:new Date().toLocaleString('pt-BR')});
+      regLead.status=novoStatus; salvar();
+      var sel2=document.getElementById('sel_'+leadId);
+      if(sel2){ sel2.value=novoStatus; sel2.className='status-select '+(SMAP[novoStatus]?SMAP[novoStatus].cls:'s-visrealizada'); }
+      atualizarContadores();
+    }
+
+    // Reatribuição automática — regras de permissão
+    await reatribuirAutomatico(leadId, secretaria);
+  }
+
   document.getElementById('comModalOverlay').classList.remove('active');
-  // Feedback visual
   var btn=event.target; btn.textContent='✓ Registrado!';
   setTimeout(function(){btn.textContent='💰 Registrar';},2000);
+}
+
+// Mapa de IDs C2S por nome de usuário
+var C2S_IDS = {
+  'Thiago':       '934e2165a84fa11936307f48b4d0348f',
+  'Milena Marina':'da09ab9fffa5ba628e4a8484cd7507f4',
+  'Daiana Alves': 'ffdc0106c38f204b8f49f6ccc1a11422'
+};
+
+// Regras: quem pode reatribuir para quem
+function podeReatribuir(quemRegistrou, corretorAtual) {
+  // Thiago pode reatribuir qualquer um
+  if(quemRegistrou==='Thiago') return true;
+  // Milena e Daiana só podem reatribuir entre Thiago, Milena e Daiana
+  var grupoSecretaria=['Thiago','Milena Marina','Daiana Alves'];
+  if(grupoSecretaria.indexOf(quemRegistrou)>=0 && grupoSecretaria.indexOf(corretorAtual)>=0) return true;
+  return false;
+}
+
+async function reatribuirAutomatico(leadId, quemRegistrou) {
+  // Busca o lead para saber o corretor atual
+  var lead=todosLeads.find(function(l){return (getLeadKey(l)||l.id)===leadId;});
+  if(!lead) return;
+  var a=lead.attributes||{};
+  var corretorAtual=(a.seller?a.seller.name:'').trim();
+
+  // Não reatribui se já está no nome de quem registrou
+  if(corretorAtual===quemRegistrou) return;
+
+  // Verifica permissão
+  if(!podeReatribuir(quemRegistrou, corretorAtual)) return;
+
+  // Só reatribui se quem registrou tem ID C2S mapeado
+  var novoSellerId=C2S_IDS[quemRegistrou];
+  if(!novoSellerId) return;
+
+  // Busca o hash_id do lead
+  var hashId=lead.id||lead.hash_id;
+  if(!hashId||hashId===leadId) {
+    // Tenta buscar do Firebase
+    var fbLead=registros[leadId];
+    if(fbLead&&fbLead.hash_id) hashId=fbLead.hash_id;
+  }
+  if(!hashId) return;
+
+  try {
+    // Atualiza no Firebase
+    await fetch(FIREBASE+'/leads/'+leadId+'.json',{
+      method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({corretor:quemRegistrou})
+    });
+
+    // Atualiza no C2S via proxy
+    await fetch('https://c2s-proxy.onrender.com/transferir-lead',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lead_hash_id:hashId, seller_id:novoSellerId})
+    });
+
+    mostrarToast('↗ Lead reatribuído para '+quemRegistrou);
+  } catch(e) {
+    console.error('Erro reatribuição:', e);
+  }
 }
 
 document.addEventListener('keydown',function(e){
