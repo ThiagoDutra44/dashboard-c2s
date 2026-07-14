@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro de Corretor Associado — ImovelUm</title>
+<style>
+:root{
+  --ink:#111820;
+  --paper:#ffffff;
+  --line:#dfe4ea;
+  --accent:#0b6b53;
+  --accent-soft:#e8f2ee;
+  --muted:#6b7683;
+  --field:#f6f8f9;
+  --focus:#0b6b53;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#eef1f3;color:var(--ink);
+  line-height:1.5;padding:0 0 60px;
+}
+.sheet{max-width:640px;margin:0 auto;background:var(--paper);min-height:100vh;box-shadow:0 0 0 1px var(--line)}
+header{
+  background:var(--accent);color:#fff;padding:28px 22px 24px;position:relative;overflow:hidden;
+}
+header:after{
+  content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;
+  border-radius:50%;background:rgba(255,255,255,.07);
+}
+.brand{font-size:13px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;opacity:.85}
+header h1{margin:6px 0 4px;font-size:23px;font-weight:700;letter-spacing:-.01em}
+header p{margin:0;font-size:14px;opacity:.85;max-width:90%}
+form{padding:8px 20px 20px}
+fieldset{border:0;margin:0;padding:22px 0 6px}
+fieldset+fieldset{border-top:1px solid var(--line)}
+legend{
+  display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent);padding:0;margin-bottom:14px;
+}
+legend .n{
+  width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+  display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex:none;
+}
+.grid{display:grid;grid-template-columns:1fr;gap:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:460px){.row2{grid-template-columns:1fr}}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.field .req{color:#c0392b}
+input,select,textarea{
+  width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--field);
+  border:1px solid var(--line);border-radius:11px;padding:12px 13px;transition:border-color .15s,background .15s;
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--focus);background:#fff;box-shadow:0 0 0 3px var(--accent-soft);
+}
+textarea{resize:vertical;min-height:80px}
+select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%236b7683' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 14px center;padding-right:34px}
+.ref-box{background:var(--accent-soft);border:1px dashed #b9d6cc;border-radius:14px;padding:16px 14px 6px}
+.hint{font-size:12px;color:var(--muted);margin:2px 0 0}
+.actions{display:flex;gap:10px;padding:6px 20px 0;flex-wrap:wrap}
+button{
+  flex:1;min-width:140px;font:inherit;font-weight:700;font-size:15px;border:0;border-radius:12px;
+  padding:15px;cursor:pointer;
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:active{background:#095844}
+.btn-ghost{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
+.foot{text-align:center;font-size:12px;color:var(--muted);padding:22px 20px 0}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header>
+    <div class="brand">ImovelUm</div>
+    <h1>Ficha de Cadastro — Corretor Associado</h1>
+    <p>Preencha os campos abaixo. Leva cerca de 3 minutos e pode ser feito direto pelo celular.</p>
+  </header>
+
+  <form id="ficha">
+    <fieldset>
+      <legend><span class="n">1</span> Dados pessoais</legend>
+      <div class="grid">
+        <div class="field">
+          <label>Nome completo <span class="req">*</span></label>
+          <input name="nome" required autocomplete="name" placeholder="Ex.: Ana Beatriz Souza">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>CPF <span class="req">*</span></label>
+            <input name="cpf" inputmode="numeric" required placeholder="087.016.327-28">
+          </div>
+          <div class="field">
+            <label>Data de nascimento</label>
+            <input name="nascimento" type="date">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Telefone / WhatsApp <span class="req">*</span></label>
+            <input name="telefone" type="tel" inputmode="tel" required autocomplete="tel" placeholder="(21) 99598-7783">
+          </div>
+          <div class="field">
+            <label>E-mail <span class="req">*</span></label>
+            <input name="email" type="email" inputmode="email" required autocomplete="email" placeholder="voce@email.com">
+          </div>
+        </div>
+        <div class="field">
+          <label>Cidade / Bairro de atuação</label>
+          <input name="cidade" placeholder="Ex.: Rio de Janeiro — Barra da Tijuca">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend><span class="n">2</span> Registro profissional</legend>
+      <div class="grid">
+        <div class="row2">
+          <div class="field">
+            <label>Número do CRECI <span class="req">*</span></label>
+            <input name="creci" required placeholder="Ex.: 12345-F">
+          </div>
+          <div class="field">
+            <label>UF do CRECI</label>
+            <input name="creci_uf" maxlength="2" style="text-transform:uppercase" placeholder="RJ">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Tipo de registro</label>
+            <select name="creci_tipo">
+              <option value="">Selecione</option>
+              <option>Definitivo</option>
+              <option>Estagiário</option>
+              <option>Em processo</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Tempo de experiência</label>
+            <select name="experiencia">
+              <option value="">Selecione</option>
+              <option>Menos de 1 ano</option>
+              <option>1 a 3 anos</option>
+              <option>3 a 5 anos</option>
+              <option>Mais de 5 anos</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Especialidade / foco de atuação</label>
+          <input name="especialidade" placeholder="Ex.: Lançamentos, alto padrão, locação">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend><span class="n">3</span> Pessoa de referência</legend>
+      <div class="ref-box">
+        <p class="hint" style="margin:0 0 12px">Contato que possa dar referências sobre seu trabalho.</p>
+        <div class="grid">
+          <div class="field">
+            <label>Nome da referência <span class="req">*</span></label>
+            <input name="ref_nome" required placeholder="Nome completo">
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label>Telefone da referência <span class="req">*</span></label>
+              <input name="ref_tel" type="tel" inputmode="tel" required placeholder="(21) 99598-7783">
+            </div>
+            <div class="field">
+              <label>Vínculo / relação</label>
+              <input name="ref_vinculo" placeholder="Ex.: Ex-gerente, cliente">
+            </div>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend><span class="n">4</span> Observações</legend>
+      <div class="field">
+        <label>Algo que devemos saber (opcional)</label>
+        <textarea name="obs" placeholder="Disponibilidade, região preferida, comentários..."></textarea>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" class="btn-primary">Enviar cadastro</button>
+    </div>
+    <p class="foot">Seus dados serão usados apenas para o processo seletivo da ImovelUm.</p>
+  </form>
+</div>
+
+<script>
+// Banco de dados de vocês (mesmo Firebase do C2S Hub), nó isolado.
+// Grava via REST, no mesmo padrão do c2s-hub.html.
+const ENDPOINT = 'https://c2s-operacional-default-rtdb.firebaseio.com/corretores_associados.json';
+
+const form = document.getElementById('ficha');
+
+// Máscara CPF: 000.000.000-00
+const cpf = form.cpf;
+cpf.addEventListener('input', ()=>{
+  let v = cpf.value.replace(/\D/g,'').slice(0,11);
+  v = v.replace(/(\d{3})(\d)/,'$1.$2')
+       .replace(/(\d{3})(\d)/,'$1.$2')
+       .replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  cpf.value = v;
+});
+
+// Máscara telefone: (21) 99598-7783
+function mascaraTel(el){
+  el.addEventListener('input', ()=>{
+    let v = el.value.replace(/\D/g,'').slice(0,11);
+    if(v.length>6){
+      v = v.replace(/(\d{2})(\d{4,5})(\d{4})/,'($1) $2-$3');
+    }else if(v.length>2){
+      v = v.replace(/(\d{2})(\d+)/,'($1) $2');
+    }else if(v.length>0){
+      v = v.replace(/(\d+)/,'($1');
+    }
+    el.value = v;
+  });
+}
+mascaraTel(form.telefone);
+mascaraTel(form.ref_tel);
+
+form.addEventListener('submit', async e=>{
+  e.preventDefault();
+  if(!form.reportValidity()) return;
+
+  const btn = form.querySelector('button[type=submit]');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  const d = Object.fromEntries(new FormData(form).entries());
+  const cadastro = {
+    ...d,
+    status: 'novo',
+    origem: 'ficha-corretor-associado',
+    criadoEm: new Date().toISOString()
+  };
+
+  try{
+    await enviarCadastro(cadastro);
+    mostrarSucesso();
+  }catch(err){
+    console.error(err);
+    btn.disabled = false; btn.textContent = 'Enviar cadastro';
+    alert('Não foi possível enviar agora. Verifique a conexão e tente de novo.');
+  }
+});
+
+// Envia o cadastro para o servidor, que grava numa linha do CSV.
+async function enviarCadastro(cadastro){
+  const resp = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cadastro)
+  });
+  if(!resp.ok){
+    throw new Error('Servidor respondeu HTTP ' + resp.status);
+  }
+  return resp.json();
+}
+
+function mostrarSucesso(){
+  document.querySelector('.sheet').innerHTML =
+    `<div style="padding:60px 26px;text-align:center">
+       <div style="width:70px;height:70px;margin:0 auto 20px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center">
+         <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+       </div>
+       <h1 style="font-size:22px;margin:0 0 8px;color:var(--ink)">Cadastro recebido!</h1>
+       <p style="color:var(--muted);max-width:320px;margin:0 auto;font-size:15px">
+         Obrigado. Nossa equipe vai analisar seus dados e entrar em contato pelo telefone informado.
+       </p>
+     </div>`;
+}
+</script>
+</body>
+</html>
