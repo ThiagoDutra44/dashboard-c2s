@@ -1113,6 +1113,7 @@ function renderizarTabela() {
     if(!bairro)bairro='—';if(!cidade)cidade='—';
     var fonte=a.lead_source?a.lead_source.name:'—'; var corretor=a.seller?a.seller.name:'—';
     var valorRaw=a.product?a.product.price_float:0; var valor=fmtValor(valorRaw); var valorEdit=(!valorRaw||valorRaw<=0);
+    if(!valorEdit&&a.product.valor_fonte==='univen') valor='<span title="Valor do Univen (QuintoAndar): o C2S não envia esse valor">'+valor+' <span style="font-size:9px;color:var(--orange);border:1px solid var(--orange);padding:0 3px;border-radius:2px;">5A</span></span>';
     var hora=fmtHora(a.created_at); var sm=SMAP[r.status]||SMAP['novo'];
     var opts=Object.keys(SMAP).map(function(k){return '<option value="'+k+'"'+(r.status===k?' selected':'')+'>'+SMAP[k].label+'</option>';}).join('');
     return '<tr id="row_'+leadKey+'" class="'+(aguardSync?'aguard-sync':'')+'">'+
