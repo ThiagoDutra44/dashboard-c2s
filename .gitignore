@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.output/
+.vercel/
+.astro/
+.env
+.env.*
+!.env.example
+.vercel-token
+.secrets/
+*.log
+.DS_Store
+Thumbs.db
